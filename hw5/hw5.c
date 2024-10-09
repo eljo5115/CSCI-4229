@@ -1,0 +1,792 @@
+/*
+ *  3D Objects
+ *
+ *  Demonstrates how to draw objects in 3D.
+ *
+ *  Key bindings:
+ *  m/M        Cycle through different views
+ *  w,a,s,d    Move around the scene in first person
+ *  a          Toggle axes
+ *  arrows     Change view angle
+ *  0          Reset view angle
+ *  f/F to change light mode/position
+ *  ESC        Exit
+ */
+
+#include "CSCIx229.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <math.h>
+#include <time.h>
+#include <stdbool.h>
+#ifdef USEGLEW
+#include <GL/glew.h>
+#endif
+//  OpenGL with prototypes for glext
+#define GL_GLEXT_PROTOTYPES
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+// Tell Xcode IDE to not gripe about OpenGL deprecation
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#else
+#include <GL/glut.h>
+#endif
+//  Default resolution
+//  For Retina displays compile with -DRES=2
+#ifndef RES
+#define RES 1
+#endif
+
+int _DEBUG = 0; //DEBUG bool, set 1 for console print out
+
+int th=0;          //  Azimuth of view angle
+int ph=0;          //  Elevation of view angle
+int axes=0;        //  Display axes
+int mode=0;        //  What to display
+int lightMode = 0;
+double dim=30.0;    //orthogonal bounding box
+int fov = 90;
+double asp = 1;
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+bool keys[256];
+
+float angle = 0.0; // look angle in degrees
+float pitch = 0.0; // look angle up/down in degrees
+
+float xpos = 0.0f;
+float ypos = 2.0f;
+float zpos = 0.0f;
+double dirx = 0.0;
+double diry = 0.0;
+double dirz = 0.0;
+//lighting 
+// Light values
+int light     =   1;  // Lighting
+int one       =   1;  // Unit value
+int distance  =   25;  // Light distance
+int inc       =  10;  // Ball increment
+int smooth    =   1;  // Smooth/Flat shading
+int local     =   0;  // Local Viewer Model
+int emission  =   0;  // Emission intensity (%)
+int ambient   =  10;  // Ambient intensity (%)
+int diffuse   =  50;  // Diffuse intensity (%)
+int specular  =   0;  // Specular intensity (%)
+int shininess =   0;  // Shininess (power of two)
+float shiny   =   1;  // Shininess (value)
+int zh        =  90;  // Light azimuth
+float ylight  =   0;  // Elevation of light
+const char* text[] = {"Ortho","Top-Down Perspective","First Person"};
+
+#define FOREST_SEED 136
+#define GRID_SIZE 50  // Number of grid cells along one axis
+#define HALF_GRID_SIZE GRID_SIZE/2
+#define CELL_SIZE 1.0f  // Size of each cell in the grid
+// River parameters
+#define RIVER_WIDTH 2.5f
+#define RIVER_DEPTH 1.0f
+#define SLICES 32
+
+#define VELOCITY 0.5f
+
+
+
+/*
+ *  Draw vertex in polar coordinates with normal
+ */
+static void Vertex(double th,double ph)
+{
+   double x = Sin(th)*Cos(ph);
+   double y = Cos(th)*Cos(ph);
+   double z =         Sin(ph);
+   //  For a sphere at the origin, the position
+   //  and normal vectors are the same
+   glNormal3d(x,y,z);
+   glVertex3d(x,y,z);
+}
+/*
+ *  Draw a ball
+ *     at (x,y,z)
+ *     radius (r)
+ */
+static void ball(double x,double y,double z,double r)
+{
+   //  Save transformation
+   glPushMatrix();
+   //  Offset, scale and rotate
+   glTranslated(x,y,z);
+   glScaled(r,r,r);
+   //  White ball with yellow specular
+   float yellow[]   = {1.0,1.0,0.0,1.0};
+   float Emission[] = {0.0,0.0,0.01*emission,1.0};
+   glColor3f(1,1,1);
+   glMaterialf(GL_FRONT,GL_SHININESS,shiny);
+   glMaterialfv(GL_FRONT,GL_SPECULAR,yellow);
+   glMaterialfv(GL_FRONT,GL_EMISSION,Emission);
+   //  Bands of latitude
+   for (int ph=-90;ph<90;ph+=inc)
+   {
+      glBegin(GL_QUAD_STRIP);
+      for (int th=0;th<=360;th+=2*inc)
+      {
+         Vertex(th,ph);
+         Vertex(th,ph+inc);
+      }
+      glEnd();
+   }
+   //  Undo transofrmations
+   glPopMatrix();
+}
+// Define the constant for the golden ratio
+#define GOLDEN_RATIO 1.61803398875
+// Draw the icosahedron using the vertices and faces
+void drawIcosahedron() {
+   // Vertices of the icosahedron
+   GLfloat vertices[12][3] = {
+      { 1, GOLDEN_RATIO, 0}, {-1, GOLDEN_RATIO, 0}, { 1,-GOLDEN_RATIO, 0}, {-1,-GOLDEN_RATIO, 0},
+      { 0, 1, GOLDEN_RATIO}, { 0,-1, GOLDEN_RATIO}, { 0, 1,-GOLDEN_RATIO}, { 0,-1,-GOLDEN_RATIO},
+      { GOLDEN_RATIO, 0, 1}, {-GOLDEN_RATIO, 0, 1}, { GOLDEN_RATIO, 0,-1}, {-GOLDEN_RATIO, 0,-1}
+   };
+
+   // Faces of the icosahedron (each row represents a triangular face)
+   int faces[20][3] = {
+      {0, 4, 1}, {0, 9, 4}, {9, 5, 4}, {4, 5, 8}, {4, 8, 1},
+      {8, 10, 1}, {8, 3, 10}, {5, 3, 8}, {5, 2, 3}, {2, 7, 3},
+      {7, 10, 3}, {7, 6, 10}, {7, 11, 6}, {11, 0, 6}, {0, 1, 6},
+      {6, 1, 10}, {9, 0, 11}, {9, 11, 2}, {9, 2, 5}, {7, 2, 11}
+   };
+
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < 20; i++) {
+        glVertex3fv(vertices[faces[i][0]]);
+        glVertex3fv(vertices[faces[i][1]]);
+        glVertex3fv(vertices[faces[i][2]]);
+    }
+    glEnd();
+}
+// Draw the tree trunk as a manually defined cylinder
+void drawTrunk() {
+    float radius = 0.1f;
+    float height = 2.0f;
+
+    // Draw the side of the cylinder
+    glBegin(GL_QUAD_STRIP);
+    for (int i = 0; i <= SLICES; i++) {
+        float angle = 2 * M_PI * i / SLICES;
+        float x = cos(angle) * radius;
+        float z = sin(angle) * radius;
+        glVertex3f(x, 0.0f, z);
+        glVertex3f(x, height, z);
+    }
+    glEnd();
+
+    // Draw the top circle
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, height, 0.0f);
+    for (int i = 0; i <= SLICES; i++) {
+        float angle = 2 * M_PI * i / SLICES;
+        float x = cos(angle) * radius;
+        float z = sin(angle) * radius;
+        glVertex3f(x, height, z);
+    }
+    glEnd();
+
+    // Draw the bottom circle
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    for (int i = 0; i <= SLICES; i++) {
+        float angle = 2 * M_PI * i / SLICES;
+        float x = cos(angle) * radius;
+        float z = sin(angle) * radius;
+        glVertex3f(x, 0.0f, z);
+    }
+    glEnd();
+}
+void drawRectangle(float width, float height, float depth) {
+    glBegin(GL_QUADS);
+    
+    // Front face
+    glVertex3f(-width / 2, 0, depth / 2);
+    glVertex3f(width / 2, 0, depth / 2);
+    glVertex3f(width / 2, height, depth / 2);
+    glVertex3f(-width / 2, height, depth / 2);
+    
+    // Back face
+    glVertex3f(-width / 2, 0, -depth / 2);
+    glVertex3f(width / 2, 0, -depth / 2);
+    glVertex3f(width / 2, height, -depth / 2);
+    glVertex3f(-width / 2, height, -depth / 2);
+    
+    // Left face
+    glVertex3f(-width / 2, 0, -depth / 2);
+    glVertex3f(-width / 2, 0, depth / 2);
+    glVertex3f(-width / 2, height, depth / 2);
+    glVertex3f(-width / 2, height, -depth / 2);
+    
+    // Right face
+    glVertex3f(width / 2, 0, -depth / 2);
+    glVertex3f(width / 2, 0, depth / 2);
+    glVertex3f(width / 2, height, depth / 2);
+    glVertex3f(width / 2, height, -depth / 2);
+    
+    // Top face
+    glVertex3f(-width / 2, height, depth / 2);
+    glVertex3f(width / 2, height, depth / 2);
+    glVertex3f(width / 2, height, -depth / 2);
+    glVertex3f(-width / 2, height, -depth / 2);
+    
+    glEnd();
+}
+
+// Function to draw a cone, serving as the foliage
+void drawCone(float radius, float height, int slices) {
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0, height, 0);  // Apex of the cone
+    for (int i = 0; i <= slices; ++i) {
+        float angle = i * 2.0f * M_PI / slices;
+        float x = radius * cos(angle);
+        float z = radius * sin(angle);
+        glVertex3f(x, 0, z);
+    }
+    glEnd();
+
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0, 0, 0);  // Center of the base
+    for (int i = 0; i <= slices; ++i) {
+        float angle = i * 2.0f * M_PI / slices;
+        float x = radius * cos(angle);
+        float z = radius * sin(angle);
+        glVertex3f(x, 0, z);
+    }
+    glEnd();
+}
+// Draw the tree with icosahedrons as leaves at a specified position
+void drawTree(float x, float y, float z,float height) {
+    glPushMatrix();
+    glScalef(1,height,1);
+    // Translate to the specified position
+    glTranslatef(x, y, z);
+
+    // Draw the trunk
+    glColor3f(0.55f, 0.27f, 0.07f); // Brown color
+    drawTrunk();
+    
+    // Draw leaves as icosahedrons
+    glColor3f(0.0f, 1.0f, 0.0f); // Green color
+    
+    // Position the leaves
+    float leafPositions[5][3] = {
+        {0.0f, 2.0f, 0.0f},
+        {0.5f, 2.2f, 0.5f},
+        {-0.5f, 1.8f, -0.5f},
+        {0.5f, 2.2f, -0.5f},
+        {-0.5f, 1.8f, 0.5f}
+    };
+    
+    for (int i = 0; i < 5; i++) {
+        glPushMatrix();
+        glTranslatef(leafPositions[i][0], leafPositions[i][1], leafPositions[i][2]);
+        glScalef(0.5f, 0.5f, 0.5f); // Scale down the icosahedron
+        drawIcosahedron();
+        glPopMatrix();
+    }
+    
+    glPopMatrix();
+}
+// Function to draw a forest of trees
+// draws numberOfTrees over a square area of areaSize*2
+void drawForest(int numberOfTrees, float areaSize) {
+    srand(FOREST_SEED); // Seed for random position generation
+
+    for (int i = 0; i < numberOfTrees; ++i) {
+        // Random positions within the defined area
+        float x = ((float)rand() / RAND_MAX) * areaSize - (areaSize / 2);
+        float z = ((float)rand() / RAND_MAX) * areaSize - (areaSize / 2);
+        float y = 0.0f; // Assuming trees are planted on the ground plane (y=0)
+        
+        drawTree(x, y, z,(float)rand()/RAND_MAX+0.5);
+    }
+}
+// Array to store heights for the grid
+float heights[GRID_SIZE][GRID_SIZE];
+// Function to initialize heights for the grid
+void initializeHeights() {
+    srand(FOREST_SEED);
+    for (int i = 0; i < GRID_SIZE; ++i) {
+        for (int j = 0; j < GRID_SIZE; ++j) {
+            float x = (float)i / (GRID_SIZE - 1);
+            float y = (float)j / (GRID_SIZE - 1);
+            float hill1 = 0.5f * expf(-((x - 0.3f) * (x - 0.3f) + (y - 0.3f) * (y - 0.3f)) / 0.02f);
+            float hill2 = 0.3f * expf(-((x - 0.7f) * (x - 0.7f) + (y - 0.7f) * (y - 0.7f)) / 0.05f);
+            heights[i][j] = hill1 + hill2;
+        }
+    }
+}
+// Function to draw the ground plane
+void drawGround() {
+    glBegin(GL_QUADS);
+    for (int i = 0; i < GRID_SIZE - 1; ++i) {
+        for (int j = 0; j < GRID_SIZE - 1; ++j) {
+            float x0 = (i- (GRID_SIZE/2)) * CELL_SIZE;
+            float z0 = (j- (GRID_SIZE/2)) * CELL_SIZE;
+            float x1 = (i + 1- (GRID_SIZE/2)) * CELL_SIZE;
+            float z1 = (j + 1- (GRID_SIZE/2)) * CELL_SIZE;
+            
+            glColor3f(0.0f, 0.8f, 0.0f); // Green color for the ground
+            glVertex3f(x0, heights[i][j], z0);
+            glVertex3f(x1, heights[i+1][j], z0);
+            glVertex3f(x1, heights[i+1][j+1], z1);
+            glVertex3f(x0, heights[i][j+1], z1);
+        }
+    }
+    glEnd();
+}
+// Function to create a river
+void createRiver() {
+    for (int i = 0; i < GRID_SIZE; ++i) {
+        // River follows a sine wave path
+        float riverX = (GRID_SIZE / 2.0f) * (sinf(i * 0.05f) + 0.7f);
+        for (int j = 0; j < GRID_SIZE; ++j) {
+            float dist = fabs(j - riverX);
+            if (dist < RIVER_WIDTH) {
+                float decrease = RIVER_DEPTH * expf(-dist * dist / (2 * RIVER_WIDTH * RIVER_WIDTH));
+                
+                // Limit the change to the height
+                if (heights[i][j] - decrease >= -RIVER_DEPTH*3) {
+                    heights[i][j] -= decrease;
+                }
+
+                if(_DEBUG == 1){
+                    printf("%f\n",heights[i][j]);
+                }
+            }
+        }
+    }
+
+}
+
+// Function to draw the water in the river
+void drawWater() {
+    glBegin(GL_QUADS);
+    for (int i = 0; i < GRID_SIZE - 1; ++i) {
+        for (int j = 0; j < GRID_SIZE - 1; ++j) {
+            float x0 = (i - HALF_GRID_SIZE) * CELL_SIZE;
+            float z0 = (j - HALF_GRID_SIZE) * CELL_SIZE;
+            float x1 = (i + 1 - HALF_GRID_SIZE) * CELL_SIZE;
+            float z1 = (j + 1 - HALF_GRID_SIZE) * CELL_SIZE;
+            
+            // Check if the current cell is part of the river
+            if (heights[i][j] < 0 || heights[i+1][j] < 0 || heights[i+1][j+1] < 0 || heights[i][j+1] < 0) {
+                glColor3f(0.0f, 0.4f, 1.0f); // Blue color for the water
+                glVertex3f(x0, -RIVER_DEPTH, z0);
+                glVertex3f(x1, -RIVER_DEPTH, z0);
+                glVertex3f(x1, -RIVER_DEPTH, z1);
+                glVertex3f(x0, -RIVER_DEPTH, z1);
+            }
+        }
+    }
+    glEnd();
+}
+
+// Function to draw a simple polygon-style house
+void drawHouse(float centerX, float centerY, float centerZ, float width, float height) {
+    float halfWidth = width / 2.0f;
+    float halfHeight = height / 2.0f;
+    
+    // Draw the base of the house (a rectangular prism)
+    glBegin(GL_QUADS);
+    
+    // Front face
+    glColor3f(1.0f, 0.0f, 0.0f); // Red color for the base
+    glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
+    
+    // Back face
+    glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
+    glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
+    
+    // Left face
+    glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
+    glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
+    
+    // Right face
+    glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
+    
+    // Bottom face (optional, usually not visible)
+    glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
+    glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
+    
+    // Top face (if needed, but typically covered by the roof)
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
+    
+    glEnd();
+    
+    // Draw the roof (a prism with a triangular cross-section)
+    glBegin(GL_TRIANGLES);
+    
+    // Front face of the roof
+    glColor3f(0.5f, 0.35f, 0.05f); // Brown color for the roof
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
+    glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
+    
+    // Back face of the roof
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
+    
+    glEnd();
+    
+    glBegin(GL_QUADS);
+    
+    // Left face of the roof
+    glColor3f(0.5f, 0.35f, 0.05f);
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
+    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
+    glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
+    
+    // Right face of the roof
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
+    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
+    glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
+    glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
+    
+    glEnd();
+}
+
+void topDownPerspective(){
+        if(ph < 60){
+            ph = 60;
+        }else if(ph > 80){
+            ph= 80;
+        }
+        double Ex = -2*dim*Sin(th)*Cos(ph);
+        double Ey = +2*dim        *Sin(ph);
+        double Ez = +2*dim*Cos(th)*Cos(ph);
+        gluLookAt(Ex,Ey+20,Ez , 0,0,0 , 0,1,0);
+}
+
+void firstPersonPerspective(){
+    dirx = Cos(ph)*Sin(th);
+    diry = Sin(ph);
+    dirz = -Cos(ph)*Cos(th);
+    gluLookAt(xpos,ypos,zpos , dirx+xpos,diry+ypos,dirz+zpos , 0,1,0);
+    ErrCheck("First Person");
+}
+/*
+ *  OpenGL (GLUT) calls this routine to display the scene
+ */
+void display()
+{
+   //  Erase the window and the depth buffer
+   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+   //  Enable Z-buffering in OpenGL
+   glEnable(GL_DEPTH_TEST);
+   // Enable face culling
+   // glEnable(GL_CULL_FACE);
+
+   //  Undo previous transformations
+   glLoadIdentity();
+    if(mode == 0){
+    // ortho view
+        glRotatef(ph,1,0,0);
+        glRotatef(th,0,1,0);
+    }
+    else if(mode==1){
+    // top-down perspective
+        topDownPerspective();
+    }
+    else if(mode==2){
+    //first person perspective
+    //camera position
+        firstPersonPerspective();
+    }
+       //  Light switch
+   if (light)
+   {
+      //  Translate intensity to color vectors
+      float Ambient[]   = {0.01*ambient ,0.01*ambient ,0.01*ambient ,1.0};
+      float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
+      float Specular[]  = {0.01*specular,0.01*specular,0.01*specular,1.0};
+      //  Light position
+      float Position[4];
+      if(lightMode == 0){
+         Position[0] =distance*Cos(30);
+         Position[1]=ylight;
+         Position[2]=distance*Sin(60);
+         Position[3]=1.0;
+      } 
+      else if(lightMode == 1){
+         Position[0] =distance*Cos(60);
+         Position[1]=ylight;
+         Position[2]=distance*Sin(0);
+         Position[3]=1.0;
+      } 
+      else if(lightMode == 2){
+         Position[0] =distance*Cos(180);
+         Position[1]=ylight;
+         Position[2]=distance*Sin(30);
+         Position[3]=1.0;
+      } 
+      else if(lightMode == 3){
+         Position[0]=distance*Cos(zh/5);
+         Position[1]=ylight;
+         Position[2]=distance*Sin(zh/5);
+         Position[3]=1.0;
+      }
+      //  Draw light position as ball (still no lighting here)
+      glColor3f(1,1,1);
+      ball(Position[0],Position[1],Position[2] , 0.1);
+      //  OpenGL should normalize normal vectors
+      glEnable(GL_NORMALIZE);
+      //  Enable lighting
+      glEnable(GL_LIGHTING);
+      //  Location of viewer for specular calculations
+      glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,local);
+      //  glColor sets ambient and diffuse color materials
+      glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
+      glEnable(GL_COLOR_MATERIAL);
+      //  Enable light 0
+      glEnable(GL_LIGHT0);
+      //  Set ambient, diffuse, specular components and position of light 0
+      glLightfv(GL_LIGHT0,GL_AMBIENT ,Ambient);
+      glLightfv(GL_LIGHT0,GL_DIFFUSE ,Diffuse);
+      glLightfv(GL_LIGHT0,GL_SPECULAR,Specular);
+      glLightfv(GL_LIGHT0,GL_POSITION,Position);
+   }
+   else
+      glDisable(GL_LIGHTING);
+   //  Decide what to draw
+   drawGround();
+   drawForest(60,GRID_SIZE-5);
+   createRiver();
+   drawWater();
+   drawHouse(8,0,10,3,2);
+   //  White
+   glColor3f(1,1,1);
+   //  Draw axes
+   if (axes)
+   {
+      const double len=25;  //  Length of axes
+      glBegin(GL_LINES);
+      glVertex3d(0.0,0.0,0.0);
+      glVertex3d(len,0.0,0.0);
+      glVertex3d(0.0,0.0,0.0);
+      glVertex3d(0.0,len,0.0);
+      glVertex3d(0.0,0.0,0.0);
+      glVertex3d(0.0,0.0,len);
+      glEnd();
+      //  Label axes
+      glRasterPos3d(len,0.0,0.0);
+      Print("X");
+      glRasterPos3d(0.0,len,0.0);
+      Print("Y");
+      glRasterPos3d(0.0,0.0,len);
+      Print("Z");
+   }
+   //  Five pixels from the lower left corner of the window
+   glWindowPos2i(5,5);
+   //  Print the text string
+   Print("Angle=%d,%d   Mode: %s, Light mode: %d",th,ph,text[mode],lightMode);
+   //  Render the scene
+   ErrCheck("display");
+   glFlush();
+   glutSwapBuffers();
+}
+/*
+ *  GLUT calls this routine when an arrow key is pressed
+ */
+void special(int key,int x,int y)
+{
+   //  Right arrow key - increase angle by 5 degrees
+   if (key == GLUT_KEY_RIGHT){
+    //   if(mode == 2){
+    //     angle += 5;
+    //   }else
+      th += 5;
+   }
+   //  Left arrow key - decrease angle by 5 degrees
+   else if (key == GLUT_KEY_LEFT){
+    // if(mode==2){
+    //     angle-=5;
+    // }else
+      th -= 5;
+   }
+   //  Up arrow key - increase elevation by 5 degrees
+   else if (key == GLUT_KEY_UP){
+    // if(mode==2){
+    //     pitch+=5;
+    // }else
+      ph += 5;
+   }
+   //  Down arrow key - decrease elevation by 5 degrees
+   else if (key == GLUT_KEY_DOWN){
+    // if(mode==2){
+    //     angle-=5;
+    // }else
+      ph -= 5;
+   }
+   //  Keep angles to +/-360 degrees
+   th %= 360;
+   ph %= 360;
+
+   ErrCheck("Special");
+   Project(mode?fov:0,asp,dim);
+   //  Tell GLUT it is necessary to redisplay the scene
+   glutPostRedisplay();
+}
+void changeMode(int inc){
+    if(inc){
+        mode = (mode+1)%3;
+    }else
+        mode = (mode+2)%3;
+    if(mode == 2){
+        th=0;
+        ph = 0;
+        xpos=0;
+        zpos=0;
+    }
+}
+void changeLightMode(int inc){
+   if(inc){
+      lightMode = (lightMode+1)%4;
+   }else{
+      lightMode = (lightMode+2)%4;
+   }
+}
+/*
+ *  GLUT calls this routine when a key is pressed
+ */
+void key(unsigned char ch,int x,int y)
+{
+   //  Exit on ESC
+   if (ch == 27)
+      exit(0);
+   //  Reset view angle
+   else if (ch == '0')
+      th = ph = 0;
+   //  Toggle axes
+   else if (ch == 'a' || ch == 'A')
+      axes = 1-axes;
+   //  Switch display mode
+   else if (ch == '-')
+      dim-=1;
+   else if (ch == '+')
+      dim+=1 ;
+    else if (ch == 'm')
+        changeMode(1);
+    else if (ch == 'M')
+        changeMode(0);
+   else if (ch == 'F'){
+      //dec lightmode
+      changeLightMode(0);
+   }
+   else if (ch == 'f'){
+      //inc lightmode
+      changeLightMode(1);
+   }
+    if(mode==2){
+        axes=0;
+        if(ch == 'w'){
+            zpos += VELOCITY * dirz;
+            xpos += VELOCITY * dirx;
+        }
+        else if(ch == 's'){
+            zpos -= VELOCITY * dirz;
+            xpos -= VELOCITY * dirx;
+        }
+        else if(ch == 'a'){
+            xpos += VELOCITY * dirz;
+            zpos -= VELOCITY * dirx;
+        }
+        else if(ch == 'd'){
+            xpos -= VELOCITY * dirz;
+            zpos += VELOCITY * dirx;
+        }
+    }
+    Project(mode?fov:0,asp,dim);
+   //  Tell GLUT it is necessary to redisplay the scene
+   glutPostRedisplay();
+}
+/*
+ *  GLUT calls this routine when the window is resized
+ */
+void reshape(int width,int height)
+{
+   //  Set the viewport to the entire window
+   glViewport(0,0, RES*width,RES*height);
+   //  Tell OpenGL we want to manipulate the projection matrix
+   glMatrixMode(GL_PROJECTION);
+   //  Undo previous transformations
+   glLoadIdentity();
+   //  Orthogonal projection
+   double asp = (height>0) ? (double)width/height : 1;
+   //setupPerspectiveCamera();
+   //glOrtho(-asp*dim,+asp*dim, -dim,+dim, -dim,+dim);
+   //  Switch to manipulating the model matrix
+   glMatrixMode(GL_MODELVIEW);
+   //  Undo previous transformations
+   glLoadIdentity();
+
+   Project(mode?fov:0,asp,dim);
+}
+/*
+ *  GLUT calls this routine when there is nothing else to do
+ */
+void idle()
+{
+   double t = glutGet(GLUT_ELAPSED_TIME)/1000.0;
+   zh = fmod(180*t,1440);
+   glutPostRedisplay();
+}
+/*
+ *  Start up GLUT and tell it what to do
+ */
+int main(int argc,char* argv[])
+{
+   //  Initialize GLUT and process user parameters
+   glutInit(&argc,argv);
+   //  Request double buffered, true color window with Z buffering at 600x600
+   glutInitWindowSize(600,600);
+   glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
+   //  Create the window
+   glutCreateWindow("Eli Jordan Forest Scene HW5 Lighting (No shadows)");
+#ifdef USEGLEW
+   //  Initialize GLEW
+   if (glewInit()!=GLEW_OK) Fatal("Error initializing GLEW\n");
+#endif
+    //set clear color to blue
+    glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
+   //  Tell GLUT to call "idle" when there is nothing else to do
+   glutIdleFunc(idle);
+   //Initialize heights for drawing ground cells
+   initializeHeights();
+   //  Tell GLUT to call "display" when the scene should be drawn
+   glutDisplayFunc(display);
+   //  Tell GLUT to call "reshape" when the window is resized
+   glutReshapeFunc(reshape);
+   //  Tell GLUT to call "special" when an arrow key is pressed
+   glutSpecialFunc(special);
+   //  Tell GLUT to call "key" when a key is pressed
+   glutKeyboardFunc(key);
+   //  Pass control to GLUT so it can interact with the user
+   glutMainLoop();
+   return 0;
+}
