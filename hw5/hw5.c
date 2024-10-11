@@ -91,7 +91,20 @@ const char* text[] = {"Ortho","Top-Down Perspective","First Person"};
 
 #define VELOCITY 0.5f
 
+// Normalize a vector
+void normalize(GLfloat v[3]) {
+    GLfloat length = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    for (int i = 0; i < 3; i++) {
+        v[i] /= length;
+    }
+}
 
+// Compute the cross product of two vectors
+void crossProduct(GLfloat v1[3], GLfloat v2[3], GLfloat result[3]) {
+    result[0] = v1[1] * v2[2] - v1[2] * v2[1];
+    result[1] = v1[2] * v2[0] - v1[0] * v2[2];
+    result[2] = v1[0] * v2[1] - v1[1] * v2[0];
+}
 
 /*
  *  Draw vertex in polar coordinates with normal
@@ -141,32 +154,60 @@ static void ball(double x,double y,double z,double r)
 }
 // Define the constant for the golden ratio
 #define GOLDEN_RATIO 1.61803398875
-// Draw the icosahedron using the vertices and faces
+// Draw an icosahedron with normals
 void drawIcosahedron() {
-   // Vertices of the icosahedron
-   GLfloat vertices[12][3] = {
-      { 1, GOLDEN_RATIO, 0}, {-1, GOLDEN_RATIO, 0}, { 1,-GOLDEN_RATIO, 0}, {-1,-GOLDEN_RATIO, 0},
-      { 0, 1, GOLDEN_RATIO}, { 0,-1, GOLDEN_RATIO}, { 0, 1,-GOLDEN_RATIO}, { 0,-1,-GOLDEN_RATIO},
-      { GOLDEN_RATIO, 0, 1}, {-GOLDEN_RATIO, 0, 1}, { GOLDEN_RATIO, 0,-1}, {-GOLDEN_RATIO, 0,-1}
-   };
+    // Vertices of the icosahedron
+    GLfloat vertices[12][3] = {
+        { 1, GOLDEN_RATIO, 0}, {-1, GOLDEN_RATIO, 0}, { 1,-GOLDEN_RATIO, 0}, {-1,-GOLDEN_RATIO, 0},
+        { 0, 1, GOLDEN_RATIO}, { 0,-1, GOLDEN_RATIO}, { 0, 1,-GOLDEN_RATIO}, { 0,-1,-GOLDEN_RATIO},
+        { GOLDEN_RATIO, 0, 1}, {-GOLDEN_RATIO, 0, 1}, { GOLDEN_RATIO, 0,-1}, {-GOLDEN_RATIO, 0,-1}
+    };
 
-   // Faces of the icosahedron (each row represents a triangular face)
-   int faces[20][3] = {
-      {0, 4, 1}, {0, 9, 4}, {9, 5, 4}, {4, 5, 8}, {4, 8, 1},
-      {8, 10, 1}, {8, 3, 10}, {5, 3, 8}, {5, 2, 3}, {2, 7, 3},
-      {7, 10, 3}, {7, 6, 10}, {7, 11, 6}, {11, 0, 6}, {0, 1, 6},
-      {6, 1, 10}, {9, 0, 11}, {9, 11, 2}, {9, 2, 5}, {7, 2, 11}
-   };
+    // Faces of the icosahedron (each row represents a triangular face)
+    int faces[20][3] = {
+        {0, 4, 1}, {0, 9, 4}, {9, 5, 4}, {4, 5, 8}, {4, 8, 1},
+        {8, 10, 1}, {8, 3, 10}, {5, 3, 8}, {5, 2, 3}, {2, 7, 3},
+        {7, 10, 3}, {7, 6, 10}, {7, 11, 6}, {11, 0, 6}, {0, 1, 6},
+        {6, 1, 10}, {9, 0, 11}, {9, 11, 2}, {9, 2, 5}, {7, 2, 11}
+    };
 
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < 20; i++) {
-        glVertex3fv(vertices[faces[i][0]]);
-        glVertex3fv(vertices[faces[i][1]]);
-        glVertex3fv(vertices[faces[i][2]]);
+        GLfloat v1[3], v2[3], normal[3];
+
+        // First vertex
+        GLfloat* p0 = vertices[faces[i][0]];
+        // Second vertex
+        GLfloat* p1 = vertices[faces[i][1]];
+        // Third vertex
+        GLfloat* p2 = vertices[faces[i][2]];
+
+        // Edge vectors
+        v1[0] = p1[0] - p0[0];
+        v1[1] = p1[1] - p0[1];
+        v1[2] = p1[2] - p0[2];
+
+        v2[0] = p2[0] - p0[0];
+        v2[1] = p2[1] - p0[1];
+        v2[2] = p2[2] - p0[2];
+
+        // Cross product to get the normal
+        crossProduct(v1, v2, normal);
+
+        // Normalize the normal
+        normalize(normal);
+
+        // Set the normal for the face
+        glNormal3fv(normal);
+
+        // Draw the face
+        glVertex3fv(p0);
+        glVertex3fv(p1);
+        glVertex3fv(p2);
     }
     glEnd();
 }
-// Draw the tree trunk as a manually defined cylinder
+// Draw the tree trunk as a cylinder
 void drawTrunk() {
     float radius = 0.1f;
     float height = 2.0f;
@@ -177,6 +218,13 @@ void drawTrunk() {
         float angle = 2 * M_PI * i / SLICES;
         float x = cos(angle) * radius;
         float z = sin(angle) * radius;
+        float nx = cos(angle); // Normal x component
+        float nz = sin(angle); // Normal z component
+        
+        // Set normal
+        glNormal3f(nx, 0.0f, nz);
+        
+        // Set vertices
         glVertex3f(x, 0.0f, z);
         glVertex3f(x, height, z);
     }
@@ -184,6 +232,7 @@ void drawTrunk() {
 
     // Draw the top circle
     glBegin(GL_TRIANGLE_FAN);
+    glNormal3f(0.0f, 1.0f, 0.0f); // Normal for the top circle
     glVertex3f(0.0f, height, 0.0f);
     for (int i = 0; i <= SLICES; i++) {
         float angle = 2 * M_PI * i / SLICES;
@@ -192,76 +241,8 @@ void drawTrunk() {
         glVertex3f(x, height, z);
     }
     glEnd();
-
-    // Draw the bottom circle
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, 0.0f, 0.0f);
-    for (int i = 0; i <= SLICES; i++) {
-        float angle = 2 * M_PI * i / SLICES;
-        float x = cos(angle) * radius;
-        float z = sin(angle) * radius;
-        glVertex3f(x, 0.0f, z);
-    }
-    glEnd();
-}
-void drawRectangle(float width, float height, float depth) {
-    glBegin(GL_QUADS);
-    
-    // Front face
-    glVertex3f(-width / 2, 0, depth / 2);
-    glVertex3f(width / 2, 0, depth / 2);
-    glVertex3f(width / 2, height, depth / 2);
-    glVertex3f(-width / 2, height, depth / 2);
-    
-    // Back face
-    glVertex3f(-width / 2, 0, -depth / 2);
-    glVertex3f(width / 2, 0, -depth / 2);
-    glVertex3f(width / 2, height, -depth / 2);
-    glVertex3f(-width / 2, height, -depth / 2);
-    
-    // Left face
-    glVertex3f(-width / 2, 0, -depth / 2);
-    glVertex3f(-width / 2, 0, depth / 2);
-    glVertex3f(-width / 2, height, depth / 2);
-    glVertex3f(-width / 2, height, -depth / 2);
-    
-    // Right face
-    glVertex3f(width / 2, 0, -depth / 2);
-    glVertex3f(width / 2, 0, depth / 2);
-    glVertex3f(width / 2, height, depth / 2);
-    glVertex3f(width / 2, height, -depth / 2);
-    
-    // Top face
-    glVertex3f(-width / 2, height, depth / 2);
-    glVertex3f(width / 2, height, depth / 2);
-    glVertex3f(width / 2, height, -depth / 2);
-    glVertex3f(-width / 2, height, -depth / 2);
-    
-    glEnd();
 }
 
-// Function to draw a cone, serving as the foliage
-void drawCone(float radius, float height, int slices) {
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0, height, 0);  // Apex of the cone
-    for (int i = 0; i <= slices; ++i) {
-        float angle = i * 2.0f * M_PI / slices;
-        float x = radius * cos(angle);
-        float z = radius * sin(angle);
-        glVertex3f(x, 0, z);
-    }
-    glEnd();
-
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0, 0, 0);  // Center of the base
-    for (int i = 0; i <= slices; ++i) {
-        float angle = i * 2.0f * M_PI / slices;
-        float x = radius * cos(angle);
-        float z = radius * sin(angle);
-        glVertex3f(x, 0, z);
-    }
-    glEnd();
-}
 // Draw the tree with icosahedrons as leaves at a specified position
 void drawTree(float x, float y, float z,float height) {
     glPushMatrix();
@@ -329,16 +310,36 @@ void drawGround() {
     glBegin(GL_QUADS);
     for (int i = 0; i < GRID_SIZE - 1; ++i) {
         for (int j = 0; j < GRID_SIZE - 1; ++j) {
-            float x0 = (i- (GRID_SIZE/2)) * CELL_SIZE;
-            float z0 = (j- (GRID_SIZE/2)) * CELL_SIZE;
-            float x1 = (i + 1- (GRID_SIZE/2)) * CELL_SIZE;
-            float z1 = (j + 1- (GRID_SIZE/2)) * CELL_SIZE;
-            
+            float x0 = (i - (GRID_SIZE / 2)) * CELL_SIZE;
+            float z0 = (j - (GRID_SIZE / 2)) * CELL_SIZE;
+            float x1 = ((i + 1) - (GRID_SIZE / 2)) * CELL_SIZE;
+            float z1 = ((j + 1) - (GRID_SIZE / 2)) * CELL_SIZE;
+
+            float p0[3] = {x0, heights[i][j], z0};
+            float p1[3] = {x1, heights[i + 1][j], z0};
+            float p2[3] = {x1, heights[i + 1][j + 1], z1};
+            float p3[3] = {x0, heights[i][j + 1], z1};
+
+            // Calculate vectors for the quad surface
+            float v1[3] = {p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]};
+            float v2[3] = {p3[0] - p0[0], p3[1] - p0[1], p3[2] - p0[2]};
+
+            // Cross product to get the normal
+            float normal[3];
+            crossProduct(v1, v2, normal);
+
+            // Normalize the normal
+            normalize(normal);
+
+            // Set normal for the quad
+            glNormal3fv(normal);
+
+            // Set color and vertices for the quad
             glColor3f(0.0f, 0.8f, 0.0f); // Green color for the ground
-            glVertex3f(x0, heights[i][j], z0);
-            glVertex3f(x1, heights[i+1][j], z0);
-            glVertex3f(x1, heights[i+1][j+1], z1);
-            glVertex3f(x0, heights[i][j+1], z1);
+            glVertex3fv(p0);
+            glVertex3fv(p1);
+            glVertex3fv(p2);
+            glVertex3fv(p3);
         }
     }
     glEnd();
@@ -374,12 +375,18 @@ void drawWater() {
         for (int j = 0; j < GRID_SIZE - 1; ++j) {
             float x0 = (i - HALF_GRID_SIZE) * CELL_SIZE;
             float z0 = (j - HALF_GRID_SIZE) * CELL_SIZE;
-            float x1 = (i + 1 - HALF_GRID_SIZE) * CELL_SIZE;
-            float z1 = (j + 1 - HALF_GRID_SIZE) * CELL_SIZE;
+            float x1 = ((i + 1) - HALF_GRID_SIZE) * CELL_SIZE;
+            float z1 = ((j + 1) - HALF_GRID_SIZE) * CELL_SIZE;
             
             // Check if the current cell is part of the river
             if (heights[i][j] < 0 || heights[i+1][j] < 0 || heights[i+1][j+1] < 0 || heights[i][j+1] < 0) {
+                // Set the normal pointing up
+                glNormal3f(0.0f, 1.0f, 0.0f);
+                
+                // Set color for the water
                 glColor3f(0.0f, 0.4f, 1.0f); // Blue color for the water
+                
+                // Draw the quad
                 glVertex3f(x0, -RIVER_DEPTH, z0);
                 glVertex3f(x1, -RIVER_DEPTH, z0);
                 glVertex3f(x1, -RIVER_DEPTH, z1);
@@ -394,86 +401,128 @@ void drawWater() {
 void drawHouse(float centerX, float centerY, float centerZ, float width, float height) {
     float halfWidth = width / 2.0f;
     float halfHeight = height / 2.0f;
-    
+
     // Draw the base of the house (a rectangular prism)
     glBegin(GL_QUADS);
-    
+
+    // Front face normals
+    glNormal3f(0.0f, 0.0f, -1.0f);
     // Front face
     glColor3f(1.0f, 0.0f, 0.0f); // Red color for the base
     glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
     glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
-    
+
+    // Back face normals
+    glNormal3f(0.0f, 0.0f, 1.0f);
     // Back face
     glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
     glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
-    
+
+    // Left face normals
+    glNormal3f(-1.0f, 0.0f, 0.0f);
     // Left face
     glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
     glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
     glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
-    
+
+    // Right face normals
+    glNormal3f(1.0f, 0.0f, 0.0f);
     // Right face
     glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
-    
+
+    // Bottom face normals
+    glNormal3f(0.0f, -1.0f, 0.0f);
     // Bottom face (optional, usually not visible)
     glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
     glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
-    
+
+    // Top face normals
+    glNormal3f(0.0f, 1.0f, 0.0f);
     // Top face (if needed, but typically covered by the roof)
     glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
-    
+
     glEnd();
-    
+
     // Draw the roof (a prism with a triangular cross-section)
     glBegin(GL_TRIANGLES);
-    
+
+    float v1[3], v2[3], normal[3];
+
+    // Roof front face normal
+    v1[0] = halfWidth; v1[1] = 0; v1[2] = 0;
+    v2[0] = 0; v2[1] = halfHeight; v2[2] = 0;
+    crossProduct(v1, v2, normal);
+    normalize(normal);
+    glNormal3fv(normal);
+
     // Front face of the roof
     glColor3f(0.5f, 0.35f, 0.05f); // Brown color for the roof
     glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
     glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
-    
+
+    // Roof back face normal
+    v1[0] = halfWidth; v1[1] = 0; v1[2] = 0;
+    v2[0] = 0; v2[1] = halfHeight; v2[2] = 0;
+    crossProduct(v1, v2, normal);
+    normalize(normal);
+    glNormal3fv(normal);
+
     // Back face of the roof
     glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
-    
+
     glEnd();
-    
+
     glBegin(GL_QUADS);
-    
+
+    // Roof left face normal
+    v1[0] = 0; v1[1] = halfHeight; v1[2] = 0;
+    v2[0] = 0; v2[1] = halfHeight; v2[2] = halfWidth * 2;
+    crossProduct(v1, v2, normal);
+    normalize(normal);
+    glNormal3fv(normal);
+
     // Left face of the roof
     glColor3f(0.5f, 0.35f, 0.05f);
     glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
     glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
     glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
-    
+
+    // Roof right face normal
+    v1[0] = 0; v1[1] = halfHeight; v1[2] = 0;
+    v2[0] = 0; v2[1] = halfHeight; v2[2] = halfWidth * 2;
+    crossProduct(v1, v2, normal);
+    normalize(normal);
+    glNormal3fv(normal);
+
     // Right face of the roof
     glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
     glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
     glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
     glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
-    
+
     glEnd();
 }
 
 void topDownPerspective(){
-        if(ph < 60){
-            ph = 60;
+        if(ph < 30){
+            ph = 30;
         }else if(ph > 80){
             ph= 80;
         }

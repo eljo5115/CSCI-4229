@@ -1,7 +1,7 @@
 <h1>Eli Jordan: Perspective Scene</h1>
 <p>I compiled on MacOS with #ifdef for imports so it should work for Linux as well.</p>
 <ol>
-<li>Navigate into the directory <code>cd hw3</code></li>
+<li>Navigate into the directory <code>cd hw4</code></li>
 <li>Run <code>make</code> this should make an executable called lorenz</li>
 <li>Run <code>./hw4</code></li>
 </ol>
