@@ -328,7 +328,13 @@ void drawGround() {
             float normal[3];
             crossProduct(v1, v2, normal);
 
-            // Normalize the normal
+            // Check normal is facing up, flip if necessary
+            if (normal[1] < 0) {
+                normal[0] = -normal[0];
+                normal[1] = -normal[1];
+                normal[2] = -normal[2];
+            }
+            // Normalize the normal vector
             normalize(normal);
 
             // Set normal for the quad
@@ -595,14 +601,14 @@ void display()
          Position[3]=1.0;
       } 
       else if(lightMode == 3){
-         Position[0]=distance*Cos(zh/5);
+         Position[0]=distance*Cos(zh/15+180);
          Position[1]=ylight;
-         Position[2]=distance*Sin(zh/5);
+         Position[2]=distance*Sin(zh/15+180);
          Position[3]=1.0;
       }
       //  Draw light position as ball (still no lighting here)
       glColor3f(1,1,1);
-      ball(Position[0],Position[1],Position[2] , 0.1);
+      ball(Position[0],Position[1],Position[2] , 1.0);
       //  OpenGL should normalize normal vectors
       glEnable(GL_NORMALIZE);
       //  Enable lighting
@@ -623,9 +629,9 @@ void display()
    else
       glDisable(GL_LIGHTING);
    //  Decide what to draw
-   drawGround();
    drawForest(60,GRID_SIZE-5);
    createRiver();
+   drawGround();
    drawWater();
    drawHouse(8,0,10,3,2);
    //  White
