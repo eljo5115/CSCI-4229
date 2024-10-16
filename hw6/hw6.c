@@ -892,11 +892,11 @@ int main(int argc,char* argv[])
    //  Tell GLUT to call "key" when a key is pressed
    glutKeyboardFunc(key);
 //    //Load textures
-   texture[0] = LoadTexBMP("trunk.bmp");
-   texture[1] = LoadTexBMP("grass.bmp");
-   texture[2] = LoadTexBMP("water.bmp");
+   texture[0] = LoadTexBMP("textures/trunk.bmp");
+   texture[1] = LoadTexBMP("textures/grass.bmp");
+   texture[2] = LoadTexBMP("textures/water.bmp");
 //    texture[3] = LoadTexBMP("brick.bmp");
-   texture[4] - LoadTexBMP("leaves.bmp");
+//    texture[4] - LoadTexBMP("leaves.bmp");
 
    //  Pass control to GLUT so it can interact with the user
    glutMainLoop();
