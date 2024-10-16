@@ -70,14 +70,14 @@ int distance  =   25;  // Light distance
 int inc       =  10;  // Ball increment
 int smooth    =   1;  // Smooth/Flat shading
 int local     =   0;  // Local Viewer Model
-int emission  =   0;  // Emission intensity (%)
+int emission  =   1;  // Emission intensity (%)
 int ambient   =  10;  // Ambient intensity (%)
 int diffuse   =  50;  // Diffuse intensity (%)
 int specular  =   0;  // Specular intensity (%)
 int shininess =   0;  // Shininess (power of two)
 float shiny   =   1;  // Shininess (value)
 int zh        =  90;  // Light azimuth
-float ylight  =   0;  // Elevation of light
+float ylight  =   3;  // Elevation of light
 const char* text[] = {"Ortho","Top-Down Perspective","First Person"};
 
 
@@ -160,6 +160,17 @@ static void ball(double x,double y,double z,double r)
 #define GOLDEN_RATIO 1.61803398875
 // Draw an icosahedron with normals
 void drawIcosahedron() {
+        //set materials
+    float white[] = {1,1,1,1};
+    float Emission[]  = {0.0,0.0,0.01*emission,1.0};
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,shiny);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,Emission);
+    //  Enable textures
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+    glColor3f(1,1,1);
+    glBindTexture(GL_TEXTURE_2D,texture[1]);
     // Vertices of the icosahedron
     GLfloat vertices[12][3] = {
         { 1, GOLDEN_RATIO, 0}, {-1, GOLDEN_RATIO, 0}, { 1,-GOLDEN_RATIO, 0}, {-1,-GOLDEN_RATIO, 0},
@@ -205,14 +216,26 @@ void drawIcosahedron() {
         glNormal3fv(normal);
 
         // Draw the face
-        glVertex3fv(p0);
-        glVertex3fv(p1);
-        glVertex3fv(p2);
+        glTexCoord2f(0,0);glVertex3fv(p0);
+        glTexCoord2f(0.5,1);glVertex3fv(p1);
+        glTexCoord2f(1,0);glVertex3fv(p2);
     }
     glEnd();
 }
 // Draw the tree trunk as a cylinder
 void drawTrunk() {
+    //set materials
+    float white[] = {1,1,1,1};
+    float Emission[]  = {0.0,0.0,0.01*emission,1.0};
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,shiny);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,Emission);
+    //  Enable textures
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+    glColor3f(1,1,1);
+    glBindTexture(GL_TEXTURE_2D,texture[0]);
+
     float radius = 0.1f;
     float height = 2.0f;
 
@@ -229,24 +252,24 @@ void drawTrunk() {
         glNormal3f(nx, 0.0f, nz);
         
         // Set vertices
-        glVertex3f(x, 0.0f, z);
-        glVertex3f(x, height, z);
+        glTexCoord2f(0,0);glVertex3f(x, 0.0f, z);
+        glTexCoord2f(1,1);glVertex3f(x, height, z);
     }
     glEnd();
 
-    // Draw the top circle
-    glBegin(GL_TRIANGLE_FAN);
-    glNormal3f(0.0f, 1.0f, 0.0f); // Normal for the top circle
-    glVertex3f(0.0f, height, 0.0f);
-    for (int i = 0; i <= SLICES; i++) {
-        float angle = 2 * M_PI * i / SLICES;
-        float x = cos(angle) * radius;
-        float z = sin(angle) * radius;
-        glVertex3f(x, height, z);
-    }
-    glEnd();
+    //top circle covered by leaves
+    // // Draw the top circle
+    // glBegin(GL_TRIANGLE_FAN);
+    // glNormal3f(0.0f, 1.0f, 0.0f); // Normal for the top circle
+    // glVertex3f(0.0f, height, 0.0f);
+    // for (int i = 0; i <= SLICES; i++) {
+    //     float angle = 2 * M_PI * i / SLICES;
+    //     float x = cos(angle) * radius;
+    //     float z = sin(angle) * radius;
+    //     glVertex3f(x, height, z);
+    // }
+    // glEnd();
 }
-
 // Draw the tree with icosahedrons as leaves at a specified position
 void drawTree(float x, float y, float z,float height) {
     glPushMatrix();
@@ -311,6 +334,18 @@ void initializeHeights() {
 }
 // Function to draw the ground plane
 void drawGround() {
+    //set materials
+    float white[] = {1,1,1,1};
+    float Emission[]  = {0.0,0.0,0.01*emission,1.0};
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,shiny);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,Emission);
+    //  Enable textures
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+    glColor3f(1,1,1);
+    glBindTexture(GL_TEXTURE_2D,texture[1]);
+
     glBegin(GL_QUADS);
     for (int i = 0; i < GRID_SIZE - 1; ++i) {
         for (int j = 0; j < GRID_SIZE - 1; ++j) {
@@ -346,10 +381,10 @@ void drawGround() {
 
             // Set color and vertices for the quad
             glColor3f(0.0f, 0.8f, 0.0f); // Green color for the ground
-            glVertex3fv(p0);
-            glVertex3fv(p1);
-            glVertex3fv(p2);
-            glVertex3fv(p3);
+            glTexCoord2f(0,0);glVertex3fv(p0);
+            glTexCoord2f(1,0);glVertex3fv(p1);
+            glTexCoord2f(0,1);glVertex3fv(p2);
+            glTexCoord2f(1,1);glVertex3fv(p3);
         }
     }
     glEnd();
@@ -380,6 +415,17 @@ void createRiver() {
 
 // Function to draw the water in the river
 void drawWater() {
+    //set materials
+    float white[] = {1,1,1,1};
+    float Emission[]  = {0.0,0.0,0.01*emission,1.0};
+    glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,shiny);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,white);
+    glMaterialfv(GL_FRONT_AND_BACK,GL_EMISSION,Emission);
+    //  Enable textures
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+    glColor3f(1,1,1);
+    glBindTexture(GL_TEXTURE_2D,texture[2]);
     glBegin(GL_QUADS);
     for (int i = 0; i < GRID_SIZE - 1; ++i) {
         for (int j = 0; j < GRID_SIZE - 1; ++j) {
@@ -397,10 +443,10 @@ void drawWater() {
                 glColor3f(0.0f, 0.4f, 1.0f); // Blue color for the water
                 
                 // Draw the quad
-                glVertex3f(x0, -RIVER_DEPTH, z0);
-                glVertex3f(x1, -RIVER_DEPTH, z0);
-                glVertex3f(x1, -RIVER_DEPTH, z1);
-                glVertex3f(x0, -RIVER_DEPTH, z1);
+                glTexCoord2f(0,0);glVertex3f(x0, -RIVER_DEPTH, z0);
+                glTexCoord2f(1,0);glVertex3f(x1, -RIVER_DEPTH, z0);
+                glTexCoord2f(0,1);glVertex3f(x1, -RIVER_DEPTH, z1);
+                glTexCoord2f(1,1);glVertex3f(x0, -RIVER_DEPTH, z1);
             }
         }
     }
@@ -826,7 +872,7 @@ int main(int argc,char* argv[])
    glutInitWindowSize(600,600);
    glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
    //  Create the window
-   glutCreateWindow("Eli Jordan Forest Scene HW5 Lighting (No shadows)");
+   glutCreateWindow("Eli Jordan Forest Scene HW6 Textures");
 #ifdef USEGLEW
    //  Initialize GLEW
    if (glewInit()!=GLEW_OK) Fatal("Error initializing GLEW\n");
@@ -845,11 +891,11 @@ int main(int argc,char* argv[])
    glutSpecialFunc(special);
    //  Tell GLUT to call "key" when a key is pressed
    glutKeyboardFunc(key);
-   //Load textures
+//    //Load textures
    texture[0] = LoadTexBMP("trunk.bmp");
    texture[1] = LoadTexBMP("grass.bmp");
    texture[2] = LoadTexBMP("water.bmp");
-   texture[3] = LoadTexBMP("brick.bmp");
+//    texture[3] = LoadTexBMP("brick.bmp");
    texture[4] - LoadTexBMP("leaves.bmp");
 
    //  Pass control to GLUT so it can interact with the user
