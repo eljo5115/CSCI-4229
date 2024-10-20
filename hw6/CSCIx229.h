@@ -6,7 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
-
+#include <stdbool.h>
 // GLEW _MUST_ be included first
 #ifdef USEGLEW
 #include <GL/glew.h>
@@ -43,9 +43,10 @@
 #define RES 1
 #endif
 
+#define PI 3.14159265
 //  cos and sin in degrees
-#define Cos(th) cos(3.14159265/180*(th))
-#define Sin(th) sin(3.14159265/180*(th))
+#define Cos(th) cos(PI/180*(th))
+#define Sin(th) sin(PI/180*(th))
 
 #ifdef __cplusplus
 extern "C" {

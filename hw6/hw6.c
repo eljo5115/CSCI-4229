@@ -14,12 +14,7 @@
  */
 
 #include "CSCIx229.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <math.h>
-#include <time.h>
-#include <stdbool.h>
+
 #ifdef USEGLEW
 #include <GL/glew.h>
 #endif
@@ -109,7 +104,23 @@ void crossProduct(GLfloat v1[3], GLfloat v2[3], GLfloat result[3]) {
     result[1] = v1[2] * v2[0] - v1[0] * v2[2];
     result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 }
+void normalizeVertex(GLfloat* vertex) {
+    float length = sqrt(vertex[0] * vertex[0] + vertex[1] * vertex[1] + vertex[2] * vertex[2]);
+    vertex[0] /= length;
+    vertex[1] /= length;
+    vertex[2] /= length;
+}
+// Function to calculate the normal at a given latitude and longitude
+void calculateNormal(float th, float ph, float* nx, float* ny, float* nz) {
+    // Convert angles from degrees to radians
+    float th_rad = th * PI / 180.0;
+    float ph_rad = ph * PI / 180.0;
 
+    // Calculate the normal using spherical coordinates
+    *nx = cos(th_rad) * sin(ph_rad);
+    *ny = sin(th_rad) * sin(ph_rad);
+    *nz = cos(ph_rad);
+}
 /*
  *  Draw vertex in polar coordinates with normal
  */
@@ -153,7 +164,7 @@ static void ball(double x,double y,double z,double r)
       }
       glEnd();
    }
-   //  Undo transofrmations
+   //  Undo transformations
    glPopMatrix();
 }
 // Define the constant for the golden ratio
@@ -178,6 +189,9 @@ void drawIcosahedron() {
         { GOLDEN_RATIO, 0, 1}, {-GOLDEN_RATIO, 0, 1}, { GOLDEN_RATIO, 0,-1}, {-GOLDEN_RATIO, 0,-1}
     };
 
+    for(int i = 0; i<12; i++){
+        normalizeVertex(vertices[i]);
+    }
     // Faces of the icosahedron (each row represents a triangular face)
     int faces[20][3] = {
         {0, 4, 1}, {0, 9, 4}, {9, 5, 4}, {4, 5, 8}, {4, 8, 1},
@@ -257,18 +271,61 @@ void drawTrunk() {
     }
     glEnd();
 
-    //top circle covered by leaves
-    // // Draw the top circle
-    // glBegin(GL_TRIANGLE_FAN);
-    // glNormal3f(0.0f, 1.0f, 0.0f); // Normal for the top circle
-    // glVertex3f(0.0f, height, 0.0f);
-    // for (int i = 0; i <= SLICES; i++) {
-    //     float angle = 2 * M_PI * i / SLICES;
-    //     float x = cos(angle) * radius;
-    //     float z = sin(angle) * radius;
-    //     glVertex3f(x, height, z);
-    // }
-    // glEnd();
+    // Draw the top circle
+    glBegin(GL_TRIANGLE_FAN);
+    glNormal3f(0.0f, 1.0f, 0.0f); // Normal for the top circle
+    glVertex3f(0.0f, height, 0.0f);
+    for (int i = 0; i <= SLICES; i++) {
+        float angle = 2 * M_PI * i / SLICES;
+        float x = cos(angle) * radius;
+        float z = sin(angle) * radius;
+        glVertex3f(x, height, z);
+    }
+    glEnd();
+}
+
+void drawPalmLeaf(double x, double y, double z, float r, int segments, float angleOffset) {
+    // Save transformation
+    glPushMatrix();
+    // Offset, scale, and rotate
+    glTranslated(x, y, z);
+    glScaled(r, r, r);
+
+    glColor3f(0.1, 0.8, 0);
+
+    // Bands of latitude
+    for (int ph = 0; ph < 80; ph += inc) {
+        glBegin(GL_QUAD_STRIP);
+        for (int th = 0; th <= 45; th += 2 * inc) {
+            float nx, ny, nz;
+            calculateNormal(th, ph, &nx, &ny, &nz);
+            glNormal3f(nx, ny, nz);
+            Vertex(th, ph);
+
+            calculateNormal(th, ph + inc, &nx, &ny, &nz);
+            glNormal3f(nx, ny, nz);
+            Vertex(th, ph + inc);
+        }
+        glEnd();
+    }
+    // Undo transformations
+    glPopMatrix();
+}
+
+void drawPalmTreeLeaves(double x, double y, double z, int numLeaves, float leafRadius, int leafSegments) {
+    // x,y,z is central point (top of trunk)
+    float angInc = 360.0/numLeaves;
+    for (int i = 0; i < numLeaves; i++) {
+        float angleOffset = 2 * PI * i / numLeaves;
+        double Lx;
+        double Lz; 
+        Lx = leafRadius * Cos(i*angInc);
+        Lz = leafRadius * Sin(i*angInc);
+        glPushMatrix();
+        glRotatef(angleOffset *180/PI, 0, 1, 0);  // Rotate each leaf around y-axis
+        drawPalmLeaf(x,y,z,leafRadius, leafSegments, -PI / 2);  // Draw leaf
+        glPopMatrix();
+    }
 }
 // Draw the tree with icosahedrons as leaves at a specified position
 void drawTree(float x, float y, float z,float height) {
@@ -284,24 +341,17 @@ void drawTree(float x, float y, float z,float height) {
     // Draw leaves as icosahedrons
     glColor3f(0.0f, 1.0f, 0.0f); // Green color
     
-    // Position the leaves
-    float leafPositions[5][3] = {
-        {0.0f, 2.0f, 0.0f},
-        {0.5f, 2.2f, 0.5f},
-        {-0.5f, 1.8f, -0.5f},
-        {0.5f, 2.2f, -0.5f},
-        {-0.5f, 1.8f, 0.5f}
-    };
-    
-    for (int i = 0; i < 5; i++) {
-        glPushMatrix();
-        glTranslatef(leafPositions[i][0], leafPositions[i][1], leafPositions[i][2]);
-        glScalef(0.5f, 0.5f, 0.5f); // Scale down the icosahedron
-        drawIcosahedron();
-        glPopMatrix();
-    }
-    
+    // Translate to the top of the trunk
+    glTranslatef(0,height, 0);
+    //glRotated();
+    // Draw leaves as palm leaves
+    glColor3f(0.0f, 1.0f, 0.0f); // Green color
+    drawPalmTreeLeaves(0,0,0,12, 0.8,20);  // 12 leaves, radius 0.8, 20 segments per leaf
+    drawPalmTreeLeaves(0,0.4f,0,10, 0.5,20);  // 10 leaves, radius 0.5, 20 segments per leaf
+
     glPopMatrix();
+    
+
 }
 // Function to draw a forest of trees
 // draws numberOfTrees over a square area of areaSize*2
@@ -314,7 +364,7 @@ void drawForest(int numberOfTrees, float areaSize) {
         float z = ((float)rand() / RAND_MAX) * areaSize - (areaSize / 2);
         float y = 0.0f; // Assuming trees are planted on the ground plane (y=0)
         
-        drawTree(x, y, z,(float)rand()/RAND_MAX+0.5);
+        drawTree(x, y, z,(float)rand()/RAND_MAX+0.8f);
     }
 }
 // Array to store heights for the grid
@@ -376,6 +426,9 @@ void drawGround() {
             // Normalize the normal vector
             normalize(normal);
 
+            if (_DEBUG){
+                printf("Ground normal: %f, %f, %f\n", normal[0],normal[1],normal[2]);
+            }
             // Set normal for the quad
             glNormal3fv(normal);
 
@@ -681,9 +734,9 @@ void display()
    //  Decide what to draw
    drawForest(60,GRID_SIZE-5);
    createRiver();
-   drawGround();
    drawWater();
    drawHouse(8,0,10,3,2);
+   drawGround();
    //  White
    glColor3f(1,1,1);
    //  Draw axes
