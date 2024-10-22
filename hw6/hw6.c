@@ -285,10 +285,16 @@ void drawTrunk() {
 }
 
 void drawPalmLeaf(double x, double y, double z, float r, int segments, float angleOffset) {
+    //  Enable textures
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+    glColor3f(1,1,1);
+    glBindTexture(GL_TEXTURE_2D,texture[1]);
+    
     // Save transformation
     glPushMatrix();
     // Offset, scale, and rotate
-    glTranslated(x, y, z);
+    glTranslated(x, y-r, z);
     glScaled(r, r, r);
 
     glColor3f(0.1, 0.8, 0);
@@ -300,10 +306,12 @@ void drawPalmLeaf(double x, double y, double z, float r, int segments, float ang
             float nx, ny, nz;
             calculateNormal(th, ph, &nx, &ny, &nz);
             glNormal3f(nx, ny, nz);
+            glTexCoord2f(0,0);
             Vertex(th, ph);
 
             calculateNormal(th, ph + inc, &nx, &ny, &nz);
             glNormal3f(nx, ny, nz);
+            glTexCoord2f(1,1);
             Vertex(th, ph + inc);
         }
         glEnd();
@@ -317,10 +325,10 @@ void drawPalmTreeLeaves(double x, double y, double z, int numLeaves, float leafR
     float angInc = 360.0/numLeaves;
     for (int i = 0; i < numLeaves; i++) {
         float angleOffset = 2 * PI * i / numLeaves;
-        double Lx;
-        double Lz; 
-        Lx = leafRadius * Cos(i*angInc);
-        Lz = leafRadius * Sin(i*angInc);
+        // double Lx;
+        // double Lz; 
+        // Lx = leafRadius * Cos(i*angInc);
+        // Lz = leafRadius * Sin(i*angInc);
         glPushMatrix();
         glRotatef(angleOffset *180/PI, 0, 1, 0);  // Rotate each leaf around y-axis
         drawPalmLeaf(x,y,z,leafRadius, leafSegments, -PI / 2);  // Draw leaf
@@ -342,12 +350,12 @@ void drawTree(float x, float y, float z,float height) {
     glColor3f(0.0f, 1.0f, 0.0f); // Green color
     
     // Translate to the top of the trunk
-    glTranslatef(0,height, 0);
+    glTranslatef(0,2,0);
     //glRotated();
     // Draw leaves as palm leaves
     glColor3f(0.0f, 1.0f, 0.0f); // Green color
     drawPalmTreeLeaves(0,0,0,12, 0.8,20);  // 12 leaves, radius 0.8, 20 segments per leaf
-    drawPalmTreeLeaves(0,0.4f,0,10, 0.5,20);  // 10 leaves, radius 0.5, 20 segments per leaf
+    drawPalmTreeLeaves(0,0.2f,0,10, 0.5,20);  // 10 leaves, radius 0.5, 20 segments per leaf
 
     glPopMatrix();
     
@@ -364,7 +372,7 @@ void drawForest(int numberOfTrees, float areaSize) {
         float z = ((float)rand() / RAND_MAX) * areaSize - (areaSize / 2);
         float y = 0.0f; // Assuming trees are planted on the ground plane (y=0)
         
-        drawTree(x, y, z,(float)rand()/RAND_MAX+0.8f);
+        drawTree(x, y, z,(float)rand()/RAND_MAX+1.0f);
     }
 }
 // Array to store heights for the grid
