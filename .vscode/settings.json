@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "*.ino": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "drawobjects.h": "c",
+        "cscix229.h": "c"
     }
 }

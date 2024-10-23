@@ -43,6 +43,8 @@
 #define RES 1
 #endif
 
+#define _DEBUG 0 //DEBUG bool, set 1 for console print out
+
 #define PI 3.14159265
 //  cos and sin in degrees
 #define Cos(th) cos(PI/180*(th))
@@ -63,6 +65,12 @@ unsigned int LoadTexBMP(const char* file);
 void Project(double fov,double asp,double dim);
 void ErrCheck(const char* where);
 int  LoadOBJ(const char* file);
+
+void normalize(float v[3]);
+void crossProduct(float v1[3], float v2[3], float result[3]);
+void normalizeVertex(float* vertex);
+// Function to calculate the normal at a given latitude and longitude for a sphere
+void calculateNormal(float th, float ph, float* nx, float* ny, float* nz);
 
 #ifdef __cplusplus
 }
