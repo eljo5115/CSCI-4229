@@ -72,12 +72,18 @@ int zh        =  90;  // Light azimuth
 float ylight  =   3;  // Elevation of light
 const char* text[] = {"Ortho","Top-Down Perspective","First Person"};
 
+// Parameters for the green
+int rows = 40;
+int columns = 40;
+float greenWidth = 10;
+float greenDepth = 10;
+float bumpiness = 0.2f; // Adjust this value for more/less bumpiness
+float radiusX = 5.0f; 
+float radiusZ = 3.0f;
+quad** green;
 
 //textures
 unsigned int texture[5];
-
-
-
 
 #define VELOCITY 0.5f
 
@@ -136,11 +142,6 @@ void drawForest(int numberOfTrees, float areaSize) {
         drawTree(x, y, z,(float)rand()/RAND_MAX+1.0f);
     }
 }
-
-
-
-
-
 
 // Function to draw a simple polygon-style house
 void drawHouse(float centerX, float centerY, float centerZ, float width, float height) {
@@ -366,11 +367,14 @@ void display()
    }
    else
       glDisable(GL_LIGHTING);
-   //  Decide what to draw
-   drawForest(60,GRID_SIZE-5);
-   createRiver();
-   drawWater(texture[2]);
-   drawHouse(8,0,10,3,2);
+    //  Decide what to draw
+
+
+    // Render the green
+    drawGreen(green, rows, columns);
+
+    // Free memory
+   createTeeBox(3,6,3,1.8f);
    drawGround(texture[1]);
    //  White
    glColor3f(1,1,1);
@@ -400,6 +404,7 @@ void display()
    Print("Angle=%d,%d   Mode: %s, Light mode: %d",th,ph,text[mode],lightMode);
    //  Render the scene
    ErrCheck("display");
+
    glFlush();
    glutSwapBuffers();
 }
@@ -571,6 +576,7 @@ int main(int argc,char* argv[])
    glutIdleFunc(idle);
    //Initialize heights for drawing ground cells
    initializeHeights();
+   green = createGreen(20, 1, 20, rows, columns, bumpiness,radiusX,radiusZ);
    //  Tell GLUT to call "display" when the scene should be drawn
    glutDisplayFunc(display);
    //  Tell GLUT to call "reshape" when the window is resized
@@ -588,5 +594,6 @@ int main(int argc,char* argv[])
 
    //  Pass control to GLUT so it can interact with the user
    glutMainLoop();
+       freeGreen(green, rows);
    return 0;
 }

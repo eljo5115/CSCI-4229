@@ -353,3 +353,199 @@ void createRiver() {
     }
 
 }
+
+// Function to calculate and set the normal for a quad
+void calculateNormalAndSet(quad q) {
+    float u[3] = {q.x2 - q.x1, q.y2 - q.y1, q.z2 - q.z1};
+    float v[3] = {q.x3 - q.x1, q.y3 - q.y1, q.z3 - q.z1};
+    float normal[3];
+
+    crossProduct(u, v, normal);
+    normalize(normal);
+
+    glNormal3f(normal[0], normal[1], normal[2]);
+}
+
+// Function to draw a quad
+void drawQuad(quad q) {
+    calculateNormalAndSet(q);
+    switch(q.type){
+        case FAIRWAY:
+            glColor3f(0.2f,1.0f,0.0f);
+            break;
+        case ROUGH:
+            glColor3f(0.15f,0.6f,0.15f);
+            break;
+        case GREEN:
+            glColor3f(0,1.0f,0);
+            break;
+    }
+    glBegin(GL_QUADS);
+    glVertex3f(q.x1, q.y1, q.z1);
+    glVertex3f(q.x2, q.y2, q.z2);
+    glVertex3f(q.x3, q.y3, q.z3);
+    glVertex3f(q.x4, q.y4, q.z4);
+    glEnd();
+}
+
+// Function to create a plateaued surface with sloped sides
+void createTeeBox(float width, float depth, float height, float bottomOffset) {
+    // drawing a box
+    // top first as that's the easiest
+    quad q;
+
+    q.y1 = q.y2 = q.y3 = q.y4 = height; 
+    q.x1 = width;
+    q.z1 = depth;
+
+    q.x2 = width;
+    q.z2 = -depth;
+
+    q.x3 = -width;
+    q.z3 = -depth;
+
+    q.x4 = -width;
+    q.z4 = depth;
+    q.type = FAIRWAY;
+    drawQuad(q);
+    q.type = ROUGH;
+    //draw left side
+    // points on top
+    q.y1 = q.y2 = height; 
+    q.x1 = q.x2 = -width;
+    q.z1 = depth; q.z2 = -depth;
+    //points on bottom
+    //offset to make slope
+    q.y3 = q.y4 = 0;
+
+    q.x3 = q.x4 = -width-bottomOffset;
+    q.z4 = depth + bottomOffset;
+    q.z3 = -depth - bottomOffset;
+    drawQuad(q);
+    //draw right side
+    //top points
+    q.y1 = q.y2 = height; 
+    q.x1 = q.x2 = width;
+    q.z1 = depth; q.z2 = -depth;
+
+    //bottom points
+    q.y3 = q.y4 = 0;
+    q.x3 = q.x4 = width + bottomOffset;
+    q.z4 = depth + bottomOffset;
+    q.z3 = -depth - bottomOffset;
+    drawQuad(q);
+    //draw front side
+    //top points
+    q.y1 = q.y2 = height; 
+    q.x1 = width; q.x2 = -width;
+    q.z1 =q.z2 = depth;
+
+    //bottom points
+    q.y3 = q.y4 = 0;
+    q.x4 = width + bottomOffset;
+    q.x3 = -width - bottomOffset;
+    q.z4=q.z3 = depth + bottomOffset;
+    drawQuad(q);
+    //draw back side
+    //top points
+    q.y1 = q.y2 = height;
+    q.x1 = width; q.x2 = -width;
+    q.z1 = q.z2 = -depth;
+    //bottom points 
+    q.y3 = q.y4 = 0;
+    q.x4 = width + bottomOffset;
+    q.x3 = -width - bottomOffset;
+    q.z4 =q.z3 = -depth - bottomOffset;
+    drawQuad(q);
+}
+// Generate random float between min and max
+float randomFloat(float min, float max) {
+    return min + ((float)rand() / RAND_MAX) * (max - min);
+}
+int isInvalidQuad(quad q) {
+    return q.x1 == -1 && q.y1 == -1 && q.z1 == -1;
+}
+
+// Check if a point (x, z) is inside a given elliptical area
+int isInsideShape(float x, float z, float centerX, float centerZ, float radiusX, float radiusZ) {
+    float dx = x - centerX;
+    float dz = z - centerZ;
+    return ((dx * dx) / (radiusX * radiusX) + (dz * dz) / (radiusZ * radiusZ)) <= 1.0f;
+}
+
+// Function to create a green with bumps, hills, and a predefined shape
+quad** createGreen(float x, float y, float z, int rows, int columns, float bumpiness, float radiusX, float radiusZ) {
+    quad** quadArray = (quad**)malloc(rows * sizeof(quad*));
+    for (int i = 0; i < rows; ++i) {
+        quadArray[i] = (quad*)malloc(columns * sizeof(quad));
+    }
+
+    float xOffset = 1.0f; // Adjust as needed for quad size
+    float zOffset = 1.0f; // Adjust as needed for quad size
+    float centerX = x; // Center of the ellipse
+    float centerZ = z;
+    float heightMap[rows+1][columns+1];
+
+    // Generate heights for the grid vertices
+    for (int i = 0; i <= rows; i++) {
+        for (int j = 0; j <= columns; j++) {
+            heightMap[i][j] = y + randomFloat(-bumpiness, bumpiness);
+        }
+    }
+
+    // Initialize and populate quadArray ensuring shared heights
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+            quad q;
+            float xStart = x + j * xOffset - (columns * xOffset) / 2;
+            float zStart = z + i * zOffset - (rows * zOffset) / 2;
+
+            // Check if the quad is within the shape
+            if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, centerX, centerZ, radiusX, radiusZ)) {
+                // Valid quad coordinates
+                q.x1 = xStart;
+                q.y1 = heightMap[i][j];
+                q.z1 = zStart;
+
+                q.x2 = xStart + xOffset;
+                q.y2 = heightMap[i][j+1];
+                q.z2 = zStart;
+
+                q.x3 = xStart + xOffset;
+                q.y3 = heightMap[i+1][j+1];
+                q.z3 = zStart + zOffset;
+
+                q.x4 = xStart;
+                q.y4 = heightMap[i+1][j];
+                q.z4 = zStart + zOffset;
+            } else {
+                // Mark as invalid
+                q.x1 = -1;
+                q.y1 = -1;
+                q.z1 = -1;
+            }
+
+            quadArray[i][j] = q;
+        }
+    }
+
+    return quadArray;
+}
+// A function to free the allocated memory for quads
+void freeGreen(quad** quadArray, int rows) {
+    for (int i = 0; i < rows; ++i) {
+        free(quadArray[i]);
+    }
+    free(quadArray);
+}
+
+// A simple example to visualize this using OpenGL would call createGreen and render each quad
+void drawGreen(quad** quadArray, int rows, int columns) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+            if (!isInvalidQuad(quadArray[i][j])) {
+                drawQuad(quadArray[i][j]);
+            }
+        }
+    }
+}

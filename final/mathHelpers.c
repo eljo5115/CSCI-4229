@@ -7,7 +7,6 @@ void normalize(float v[3]) {
         v[i] /= length;
     }
 }
-
 // Compute the cross product of two vectors
 void crossProduct(float v1[3], float v2[3], float result[3]) {
     result[0] = v1[1] * v2[2] - v1[2] * v2[1];
