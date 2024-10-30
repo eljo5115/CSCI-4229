@@ -4,5 +4,6 @@
         "complex": "cpp",
         "drawobjects.h": "c",
         "cscix229.h": "c"
-    }
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/g++"
 }

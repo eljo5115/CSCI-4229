@@ -1,4 +1,5 @@
 #include "drawObjects.h"
+
 #include "CSCIx229.h"
 int inc       =  10;  // Ball increment
 int smooth    =   1;  // Smooth/Flat shading
@@ -15,7 +16,7 @@ float heights[GRID_SIZE][GRID_SIZE];
 /*
  *  Draw vertex in polar coordinates with normal
  */
-static void Vertex(double th,double ph)
+static void SphereVertex(double th,double ph)
 {
    double x = Sin(th)*Cos(ph);
    double y = Cos(th)*Cos(ph);
@@ -50,8 +51,8 @@ static void ball(double x,double y,double z,double r)
       glBegin(GL_QUAD_STRIP);
       for (int th=0;th<=360;th+=2*inc)
       {
-         Vertex(th,ph);
-         Vertex(th,ph+inc);
+         SphereVertex(th,ph);
+         SphereVertex(th,ph+inc);
       }
       glEnd();
    }
@@ -131,7 +132,6 @@ void drawIcosahedron(GLuint texture) {
     glEnd();
 }
 
-
 // Draw the tree trunk as a cylinder
 void drawTrunk(GLuint texture) {
     //set materials
@@ -203,12 +203,12 @@ void drawPalmLeaf(double x, double y, double z, float r, int segments, float ang
             calculateNormal(th, ph, &nx, &ny, &nz);
             glNormal3f(nx, ny, nz);
             glTexCoord2f(0,0);
-            Vertex(th, ph);
+            SphereVertex(th, ph);
 
             calculateNormal(th, ph + inc, &nx, &ny, &nz);
             glNormal3f(nx, ny, nz);
             glTexCoord2f(1,1);
-            Vertex(th, ph + inc);
+            SphereVertex(th, ph + inc);
         }
         glEnd();
     }
@@ -368,7 +368,9 @@ void calculateNormalAndSet(quad q) {
 
 // Function to draw a quad
 void drawQuad(quad q) {
+    //make normals
     calculateNormalAndSet(q);
+    //switch based on type of quad
     switch(q.type){
         case FAIRWAY:
             glColor3f(0.2f,1.0f,0.0f);
@@ -377,9 +379,10 @@ void drawQuad(quad q) {
             glColor3f(0.15f,0.6f,0.15f);
             break;
         case GREEN:
-            glColor3f(0,1.0f,0);
+            glColor3ub(47,250,60);
             break;
     }
+    //draw quad
     glBegin(GL_QUADS);
     glVertex3f(q.x1, q.y1, q.z1);
     glVertex3f(q.x2, q.y2, q.z2);
@@ -467,14 +470,15 @@ int isInvalidQuad(quad q) {
 }
 
 // Check if a point (x, z) is inside a given elliptical area
-int isInsideShape(float x, float z, float centerX, float centerZ, float radiusX, float radiusZ) {
+int isInsideShape(float x, float z,float a,float b ,float centerX, float centerZ, float radiusX, float radiusZ) {
     float dx = x - centerX;
     float dz = z - centerZ;
-    return ((dx * dx) / (radiusX * radiusX) + (dz * dz) / (radiusZ * radiusZ)) <= 1.0f;
+    return (a * (dx * dx) / (radiusX * radiusX) + b * (dz * dz) / (radiusZ * radiusZ)) <= 1.0f;
 }
 
 // Function to create a green with bumps, hills, and a predefined shape
 quad** createGreen(float x, float y, float z, int rows, int columns, float bumpiness, float radiusX, float radiusZ) {
+    srand(GREEN_SEED);
     quad** quadArray = (quad**)malloc(rows * sizeof(quad*));
     for (int i = 0; i < rows; ++i) {
         quadArray[i] = (quad*)malloc(columns * sizeof(quad));
@@ -484,6 +488,14 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
     float zOffset = 1.0f; // Adjust as needed for quad size
     float centerX = x; // Center of the ellipse
     float centerZ = z;
+    float a = randomFloat(-0.5,0.7);
+    float b;
+    if((a < 0.1 && a > 0) || a<0 ){
+        b = randomFloat(0.2,0.9);
+    }else{
+        b = randomFloat(-0.5,0.7);
+    }
+    printf("Random a: %f, Random b: %f",a,b);
     float heightMap[rows+1][columns+1];
 
     // Generate heights for the grid vertices
@@ -501,7 +513,7 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
             float zStart = z + i * zOffset - (rows * zOffset) / 2;
 
             // Check if the quad is within the shape
-            if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, centerX, centerZ, radiusX, radiusZ)) {
+            if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2,a ,b , centerX, centerZ, radiusX, radiusZ)) {
                 // Valid quad coordinates
                 q.x1 = xStart;
                 q.y1 = heightMap[i][j];
@@ -518,6 +530,7 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
                 q.x4 = xStart;
                 q.y4 = heightMap[i+1][j];
                 q.z4 = zStart + zOffset;
+                q.type = GREEN;
             } else {
                 // Mark as invalid
                 q.x1 = -1;

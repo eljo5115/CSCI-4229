@@ -69,7 +69,7 @@ int diffuse   =  50;  // Diffuse intensity (%)
 int specular  =   0;  // Specular intensity (%)
 int local     =   0;  // Local Viewer Model
 int zh        =  90;  // Light azimuth
-float ylight  =   3;  // Elevation of light
+float ylight  =   15;  // Elevation of light
 const char* text[] = {"Ortho","Top-Down Perspective","First Person"};
 
 // Parameters for the green
@@ -559,6 +559,7 @@ void idle()
  */
 int main(int argc,char* argv[])
 {
+   srand(FOREST_SEED);
    //  Initialize GLUT and process user parameters
    glutInit(&argc,argv);
    //  Request double buffered, true color window with Z buffering at 600x600

@@ -32,7 +32,7 @@ print.o: print.c CSCIx229.h
 loadtexbmp.o: loadtexbmp.c CSCIx229.h
 loadobj.o: loadobj.c CSCIx229.h
 projection.o: projection.c CSCIx229.h
-drawObjects.o: drawObjects.c drawObjects.h CSCIx229.h
+drawObjects.o: drawObjects.c drawObjects.h CSCIx229.h 
 mathHelpers.o: mathHelpers.c CSCIx229.h
 #  Create archive
 CSCIx229.a:fatal.o errcheck.o print.o loadtexbmp.o loadobj.o projection.o drawObjects.o mathHelpers.o

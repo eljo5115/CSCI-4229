@@ -7,6 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
+#include <time.h>
 // GLEW _MUST_ be included first
 #ifdef USEGLEW
 #include <GL/glew.h>
