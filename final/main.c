@@ -143,128 +143,41 @@ void drawForest(int numberOfTrees, float areaSize) {
     }
 }
 
-// Function to draw a simple polygon-style house
-void drawHouse(float centerX, float centerY, float centerZ, float width, float height) {
-    float halfWidth = width / 2.0f;
-    float halfHeight = height / 2.0f;
-
-    // Draw the base of the house (a rectangular prism)
-    glBegin(GL_QUADS);
-
-    // Front face normals
-    glNormal3f(0.0f, 0.0f, -1.0f);
-    // Front face
-    glColor3f(1.0f, 0.0f, 0.0f); // Red color for the base
-    glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
-
-    // Back face normals
-    glNormal3f(0.0f, 0.0f, 1.0f);
-    // Back face
-    glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
-    glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
-
-    // Left face normals
-    glNormal3f(-1.0f, 0.0f, 0.0f);
-    // Left face
-    glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
-    glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
-
-    // Right face normals
-    glNormal3f(1.0f, 0.0f, 0.0f);
-    // Right face
-    glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
-
-    // Bottom face normals
-    glNormal3f(0.0f, -1.0f, 0.0f);
-    // Bottom face (optional, usually not visible)
-    glVertex3f(centerX - halfWidth, centerY, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY, centerZ + halfWidth);
-    glVertex3f(centerX - halfWidth, centerY, centerZ + halfWidth);
-
-    // Top face normals
-    glNormal3f(0.0f, 1.0f, 0.0f);
-    // Top face (if needed, but typically covered by the roof)
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
-
-    glEnd();
-
-    // Draw the roof (a prism with a triangular cross-section)
-    glBegin(GL_TRIANGLES);
-
-    float v1[3], v2[3], normal[3];
-
-    // Roof front face normal
-    v1[0] = halfWidth; v1[1] = 0; v1[2] = 0;
-    v2[0] = 0; v2[1] = halfHeight; v2[2] = 0;
-    crossProduct(v1, v2, normal);
-    normalize(normal);
-    glNormal3fv(normal);
-
-    // Front face of the roof
-    glColor3f(0.5f, 0.35f, 0.05f); // Brown color for the roof
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
-    glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
-
-    // Roof back face normal
-    v1[0] = halfWidth; v1[1] = 0; v1[2] = 0;
-    v2[0] = 0; v2[1] = halfHeight; v2[2] = 0;
-    crossProduct(v1, v2, normal);
-    normalize(normal);
-    glNormal3fv(normal);
-
-    // Back face of the roof
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
-
-    glEnd();
-
-    glBegin(GL_QUADS);
-
-    // Roof left face normal
-    v1[0] = 0; v1[1] = halfHeight; v1[2] = 0;
-    v2[0] = 0; v2[1] = halfHeight; v2[2] = halfWidth * 2;
-    crossProduct(v1, v2, normal);
-    normalize(normal);
-    glNormal3fv(normal);
-
-    // Left face of the roof
-    glColor3f(0.5f, 0.35f, 0.05f);
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ - halfWidth);
-    glVertex3f(centerX - halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
-    glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
-
-    // Roof right face normal
-    v1[0] = 0; v1[1] = halfHeight; v1[2] = 0;
-    v2[0] = 0; v2[1] = halfHeight; v2[2] = halfWidth * 2;
-    crossProduct(v1, v2, normal);
-    normalize(normal);
-    glNormal3fv(normal);
-
-    // Right face of the roof
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ - halfWidth);
-    glVertex3f(centerX + halfWidth, centerY + height, centerZ + halfWidth);
-    glVertex3f(centerX, centerY + height + halfHeight, centerZ + halfWidth);
-    glVertex3f(centerX, centerY + height + halfHeight, centerZ - halfWidth);
-
-    glEnd();
+int generateRandomInt(int min, int max){
+   return rand() % (max - min + 1) + min;
 }
+
+/*
+Function to populate the arrays, shape, etc for the current hole.
+Params:
+None? I think it's all global vars
+Returns:
+None, uses global vars
+*/
+void initializeHole(){
+   int par = 3; //random choice from 3,4,5
+   int holeLength = 10; //used to place green (i.e. z position)
+   switch(par){
+      case 3:
+      //random int between 160-220
+         holeLength = generateRandomInt(160,220);
+         break;
+      case 4:
+      //random int between 290-450
+         holeLength = generateRandomInt(290,450);
+         break;
+      case 5:
+      //random int between 500-650
+         holeLength = generateRandomInt(490,650);
+         break;
+      default:
+      holeLength = 50; //obvious that something broke
+         break;
+   }
+   createGreen(0,1,holeLength, rows,columns, 0.1, radiusX, radiusZ); // places green at the end of the hole
+
+}
+
 
 void topDownPerspective(){
         if(ph < 30){
@@ -348,6 +261,7 @@ void display()
       }
       //  Draw light position as ball (still no lighting here)
       glColor3f(1,1,1);
+      ball(Position[0],Position[1],Position[2],3.0);
       //  OpenGL should normalize normal vectors
       glEnable(GL_NORMALIZE);
       //  Enable lighting
@@ -373,7 +287,7 @@ void display()
     // Render the green
     drawGreen(green, rows, columns);
 
-    // Free memory
+   
    createTeeBox(3,6,3,1.8f);
    drawGround(texture[1]);
    //  White
@@ -566,13 +480,13 @@ int main(int argc,char* argv[])
    glutInitWindowSize(600,600);
    glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
    //  Create the window
-   glutCreateWindow("Eli Jordan Forest Scene HW6 Textures");
+   glutCreateWindow("Eli Jordan Procedural Golf Course");
 #ifdef USEGLEW
    //  Initialize GLEW
    if (glewInit()!=GLEW_OK) Fatal("Error initializing GLEW\n");
 #endif
-    //set clear color to blue
-    glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
+   //set clear color to blue
+   glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
    //  Tell GLUT to call "idle" when there is nothing else to do
    glutIdleFunc(idle);
    //Initialize heights for drawing ground cells
@@ -595,6 +509,6 @@ int main(int argc,char* argv[])
 
    //  Pass control to GLUT so it can interact with the user
    glutMainLoop();
-       freeGreen(green, rows);
+   freeGreen(green, rows);
    return 0;
 }

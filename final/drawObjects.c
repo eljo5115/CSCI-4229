@@ -16,7 +16,7 @@ float heights[GRID_SIZE][GRID_SIZE];
 /*
  *  Draw vertex in polar coordinates with normal
  */
-static void SphereVertex(double th,double ph)
+void SphereVertex(double th,double ph)
 {
    double x = Sin(th)*Cos(ph);
    double y = Cos(th)*Cos(ph);
@@ -31,7 +31,7 @@ static void SphereVertex(double th,double ph)
  *     at (x,y,z)
  *     radius (r)
  */
-static void ball(double x,double y,double z,double r)
+void ball(double x,double y,double z,double r)
 {
    //  Save transformation
    glPushMatrix();
@@ -59,8 +59,6 @@ static void ball(double x,double y,double z,double r)
    //  Undo transformations
    glPopMatrix();
 }
-
-
 
 // Define the constant for the golden ratio
 #define GOLDEN_RATIO 1.61803398875
@@ -353,20 +351,50 @@ void createRiver() {
     }
 
 }
-
-// Function to calculate and set the normal for a quad
-void calculateNormalAndSet(quad q) {
-    float u[3] = {q.x2 - q.x1, q.y2 - q.y1, q.z2 - q.z1};
-    float v[3] = {q.x3 - q.x1, q.y3 - q.y1, q.z3 - q.z1};
+void renderNormalDebug(quad q) {
+    float center[3] = {(q.x1 + q.x2 + q.x3 + q.x4) / 4.0f,
+                       (q.y1 + q.y2 + q.y3 + q.y4) / 4.0f,
+                       (q.z1 + q.z2 + q.z3 + q.z4) / 4.0f};
     float normal[3];
-
-    crossProduct(u, v, normal);
+    
+    normal[0] = q.x1+q.x2+q.x3+q.x4;
+    normal[1] = q.y1+q.y2+q.y3+q.y4;
+    normal[2] = q.z1+q.z2+q.z3+q.z4;
     normalize(normal);
 
+    // Draw a line from the center of the quad along the normal
+    glBegin(GL_LINES);
+    glVertex3f(center[0], center[1], center[2]);
+    glVertex3f(center[0] + normal[0] * 0.5f, center[1] + normal[1] * 0.5f, center[2] + normal[2] * 0.5f);
+    glEnd();
+}
+// Function to calculate and set the normal for a quad
+void calculateNormalAndSet(quad q) {
+    float normal[3];
+
+    normal[0] = q.x1+q.x2+q.x3+q.x4;
+    normal[1] = q.y1+q.y2+q.y3+q.y4;
+    normal[2] = q.z1+q.z2+q.z3+q.z4;
+    normalize(normal);
+    // if(normal[0] < 0){
+    //     normal[0] = -normal[0];
+    //     normal[1] = -normal[1];
+    //     normal[2] = -normal[2];
+    // }
+    if(_DEBUG){
+        renderNormalDebug(q);
+    }
     glNormal3f(normal[0], normal[1], normal[2]);
 }
 
-// Function to draw a quad
+/*
+Draws the given quad struct (q)
+Can be called in display func
+Params: 
+q - quad to draw
+Returns:
+None
+*/
 void drawQuad(quad q) {
     //make normals
     calculateNormalAndSet(q);
@@ -391,7 +419,10 @@ void drawQuad(quad q) {
     glEnd();
 }
 
-// Function to create a plateaued surface with sloped sides
+/*
+Function to create a plateaued surface with sloped sides
+Misnomered function, DRAWS tee box
+*/
 void createTeeBox(float width, float depth, float height, float bottomOffset) {
     // drawing a box
     // top first as that's the easiest
@@ -465,6 +496,7 @@ void createTeeBox(float width, float depth, float height, float bottomOffset) {
 float randomFloat(float min, float max) {
     return min + ((float)rand() / RAND_MAX) * (max - min);
 }
+// checks quad for invalid values
 int isInvalidQuad(quad q) {
     return q.x1 == -1 && q.y1 == -1 && q.z1 == -1;
 }
@@ -476,7 +508,16 @@ int isInsideShape(float x, float z,float a,float b ,float centerX, float centerZ
     return (a * (dx * dx) / (radiusX * radiusX) + b * (dz * dz) / (radiusZ * radiusZ)) <= 1.0f;
 }
 
-// Function to create a green with bumps, hills, and a predefined shape
+/*
+Function to create a green with bumps, hills, and a predefined shape
+Params: 
+x,y,z - center of green
+rows, columns - size of height map
+bumpiness - float for random change in elevation
+radiusX, radiusZ - floats for the shape equation
+Returns:
+quad[][] - 2d array of quads (struct) that have the absolute position of the green
+*/
 quad** createGreen(float x, float y, float z, int rows, int columns, float bumpiness, float radiusX, float radiusZ) {
     srand(GREEN_SEED);
     quad** quadArray = (quad**)malloc(rows * sizeof(quad*));
@@ -552,7 +593,14 @@ void freeGreen(quad** quadArray, int rows) {
     free(quadArray);
 }
 
-// A simple example to visualize this using OpenGL would call createGreen and render each quad
+/*
+Draws all quads in the given quadArray
+Params:
+quadArray[][] - 2d array of quads (struct) that define the green
+rows,columns - size of quadArray
+Returns:
+None
+*/
 void drawGreen(quad** quadArray, int rows, int columns) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < columns; j++) {

@@ -44,7 +44,7 @@
 #define RES 1
 #endif
 
-#define _DEBUG 0 //DEBUG bool, set 1 for console print out
+#define _DEBUG 0 //DEBUG bool, set 1 for console print out and normal visualize
 
 #define PI 3.14159265
 //  cos and sin in degrees

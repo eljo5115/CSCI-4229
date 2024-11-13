@@ -12,7 +12,7 @@ typedef struct {
 
 
 #define FOREST_SEED 145
-#define GREEN_SEED 100257 //Random between 0-10000 for hourglass, random > 100000 for oval
+#define GREEN_SEED 100145 //Random between 0-10000 for hourglass, random > 100000 for oval
 #define GRID_SIZE 50  // Number of grid cells along one axis
 #define HALF_GRID_SIZE GRID_SIZE/2
 #define CELL_SIZE 1.0f  // Size of each cell in the grid
@@ -26,8 +26,8 @@ typedef struct {
 #define BUNKER 3
 #define WATER 4
 
-static void SphereVertex(double th,double ph);
-static void ball(double x,double y,double z,double r);
+void SphereVertex(double th,double ph);
+void ball(double x,double y,double z,double r);
 void drawIcosahedron(GLuint texture);
 void drawTrunk(GLuint texture);
 void drawPalmLeaf(double x, double y, double z, float r, int segments, float angleOffset, GLuint texture);
