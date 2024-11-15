@@ -6,8 +6,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
-#include <stdbool.h>
-#include <time.h>
 
 // GLEW _MUST_ be included first
 #ifdef USEGLEW
@@ -45,12 +43,9 @@
 #define RES 1
 #endif
 
-#define _DEBUG 0 //DEBUG bool, set 1 for console print out and normal visualize
-
-#define PI 3.14159265
 //  cos and sin in degrees
-#define Cos(th) cos(PI/180*(th))
-#define Sin(th) sin(PI/180*(th))
+#define Cos(th) cos(3.14159265/180*(th))
+#define Sin(th) sin(3.14159265/180*(th))
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,12 +62,6 @@ unsigned int LoadTexBMP(const char* file);
 void Project(double fov,double asp,double dim);
 void ErrCheck(const char* where);
 int  LoadOBJ(const char* file);
-
-void normalize(float v[3]);
-void crossProduct(float v1[3], float v2[3], float result[3]);
-void normalizeVertex(float* vertex);
-// Function to calculate the normal at a given latitude and longitude for a sphere
-void calculateNormal(float th, float ph, float* nx, float* ny, float* nz);
 
 #ifdef __cplusplus
 }

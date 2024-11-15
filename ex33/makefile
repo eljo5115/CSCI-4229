@@ -1,5 +1,5 @@
-# Example 13
-EXE=main
+# Example 33
+EXE=ex33
 
 # Main target
 all: $(EXE)
@@ -25,18 +25,16 @@ CLEAN=rm -f $(EXE) *.o *.a
 endif
 
 # Dependencies
-main.o: main.c CSCIx229.h
+ex33.o: ex33.c CSCIx229.h
 fatal.o: fatal.c CSCIx229.h
 errcheck.o: errcheck.c CSCIx229.h
 print.o: print.c CSCIx229.h
 loadtexbmp.o: loadtexbmp.c CSCIx229.h
 loadobj.o: loadobj.c CSCIx229.h
 projection.o: projection.c CSCIx229.h
-drawObjects.o: drawObjects.c drawObjects.h CSCIx229.h
-perlin.o: perlin.c perlin.h
-mathHelpers.o: mathHelpers.c CSCIx229.h
+
 #  Create archive
-CSCIx229.a:fatal.o errcheck.o print.o loadtexbmp.o loadobj.o projection.o drawObjects.o mathHelpers.o perlin.o
+CSCIx229.a:fatal.o errcheck.o print.o loadtexbmp.o loadobj.o projection.o
 	ar -rcs $@ $^
 
 # Compile rules
@@ -46,7 +44,7 @@ CSCIx229.a:fatal.o errcheck.o print.o loadtexbmp.o loadobj.o projection.o drawOb
 	g++ -c $(CFLG)  $<
 
 #  Link
-main:main.o   CSCIx229.a
+ex33:ex33.o   CSCIx229.a
 	gcc $(CFLG) -o $@ $^  $(LIBS)
 
 #  Clean

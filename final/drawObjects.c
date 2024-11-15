@@ -1,6 +1,7 @@
 #include "drawObjects.h"
 
 #include "CSCIx229.h"
+#include "perlin.h"
 int inc       =  10;  // Ball increment
 int smooth    =   1;  // Smooth/Flat shading
 
@@ -538,11 +539,11 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
     }
     printf("Random a: %f, Random b: %f",a,b);
     float heightMap[rows+1][columns+1];
-
+    initializePermutations();
     // Generate heights for the grid vertices
     for (int i = 0; i <= rows; i++) {
         for (int j = 0; j <= columns; j++) {
-            heightMap[i][j] = y + randomFloat(-bumpiness, bumpiness);
+            heightMap[i][j] = y + perlinNoise(x + j * xOffset - (columns * xOffset) / 2,z + i * zOffset - (rows * zOffset) / 2);
         }
     }
 
@@ -554,14 +555,14 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
             float zStart = z + i * zOffset - (rows * zOffset) / 2;
 
             // Check if the quad is within the shape
-            if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2,a ,b , centerX, centerZ, radiusX, radiusZ)) {
+            //if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2,a ,b , centerX, centerZ, radiusX, radiusZ)) {
                 // Valid quad coordinates
                 q.x1 = xStart;
                 q.y1 = heightMap[i][j];
                 q.z1 = zStart;
 
                 q.x2 = xStart + xOffset;
-                q.y2 = heightMap[i][j+1];
+                q.y2 = heightMap[i+1][j];
                 q.z2 = zStart;
 
                 q.x3 = xStart + xOffset;
@@ -569,15 +570,15 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
                 q.z3 = zStart + zOffset;
 
                 q.x4 = xStart;
-                q.y4 = heightMap[i+1][j];
+                q.y4 = heightMap[i][j+1];
                 q.z4 = zStart + zOffset;
                 q.type = GREEN;
-            } else {
+            //} else {
                 // Mark as invalid
-                q.x1 = -1;
-                q.y1 = -1;
-                q.z1 = -1;
-            }
+            //     q.x1 = -1;
+            //     q.y1 = -1;
+            //     q.z1 = -1;
+            // }
 
             quadArray[i][j] = q;
         }
@@ -604,9 +605,8 @@ None
 void drawGreen(quad** quadArray, int rows, int columns) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < columns; j++) {
-            if (!isInvalidQuad(quadArray[i][j])) {
-                drawQuad(quadArray[i][j]);
-            }
+            if (isInvalidQuad(quadArray[i][j]))continue;
+            drawQuad(quadArray[i][j]);
         }
     }
 }

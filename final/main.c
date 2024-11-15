@@ -174,7 +174,7 @@ void initializeHole(){
       holeLength = 50; //obvious that something broke
          break;
    }
-   createGreen(0,1,holeLength, rows,columns, 0.1, radiusX, radiusZ); // places green at the end of the hole
+   green = createGreen(0,1,holeLength, rows,columns, 0.1, radiusX, radiusZ); // places green at the end of the hole
 
 }
 
@@ -491,7 +491,9 @@ int main(int argc,char* argv[])
    glutIdleFunc(idle);
    //Initialize heights for drawing ground cells
    initializeHeights();
+   
    green = createGreen(20, 1, 20, rows, columns, bumpiness,radiusX,radiusZ);
+   // initializeHole();
    //  Tell GLUT to call "display" when the scene should be drawn
    glutDisplayFunc(display);
    //  Tell GLUT to call "reshape" when the window is resized

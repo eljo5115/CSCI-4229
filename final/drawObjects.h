@@ -12,7 +12,7 @@ typedef struct {
 
 
 #define FOREST_SEED 145
-#define GREEN_SEED 100145 //Random between 0-10000 for hourglass, random > 100000 for oval
+#define GREEN_SEED 1000 //Random between 0-10000 for hourglass, random > 100000 for oval
 #define GRID_SIZE 50  // Number of grid cells along one axis
 #define HALF_GRID_SIZE GRID_SIZE/2
 #define CELL_SIZE 1.0f  // Size of each cell in the grid
