@@ -36,7 +36,7 @@ void drawWater(GLuint texture);
 void initializeHeights();
 void createRiver();
 
-void createFairway(int length);
+quad** createFairway(int length);
 
 quad** createGreen(float x, float y, float z, int rows, int columns, float bumpiness,float radiusX,float radiusZ);
 void drawGreen(quad** quadArray, int rows, int columns);

@@ -556,13 +556,13 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
             float xStart = x + j * xOffset - (columns * xOffset) / 2;
             float zStart = z + i * zOffset - (rows * zOffset) / 2;
 
+            bool inside = isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, a, b, centerX, centerZ, radiusX, radiusZ);
+
             // Check if the quad is within the shape
-            if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2,a ,b , centerX, centerZ, radiusX, radiusZ)) {
-                float h1 = (heightMap[i][j] + heightMap[i][j+1] + heightMap[i+1][j] + heightMap[i+1][j+1]) * 0.25;
-                float h2 = (heightMap[i][j+1] + heightMap[i][j] + heightMap[i+1][j]) * 0.3333;
-                float h3 = (heightMap[i+1][j] + heightMap[i+1][j+1] + heightMap[i][j+1]) * 0.3333;
-                float h4 = (heightMap[i+1][j+1] + heightMap[i+1][j] + heightMap[i][j]) * 0.3333;
-                
+            if (!inside && (
+                isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, a, b, centerX, centerZ, radiusX + xOffset, radiusZ) ||
+                isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, a, b, centerX, centerZ, radiusX, radiusZ + zOffset)) )
+                {                
                 // Valid quad coordinates
                 q.x1 = xStart;
                 q.y1 = heightMap[i][j];
@@ -579,11 +579,29 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
                 q.x4 = xStart;
                 q.y4 = heightMap[i+1][j];
                 q.z4 = zStart + zOffset;
+                q.type = ROUGH;
+                // printf("Quad[%d][%d] Heights:\n", i, j);
+                // printf("  (%f) -> (%f)\n", q.y1, q.y2);
+                // printf("  (%f) -> (%f)\n", q.y4, q.y3);
+            } else if(inside) {
+                                // Valid quad coordinates
+                q.x1 = xStart;
+                q.y1 = heightMap[i][j];
+                q.z1 = zStart;
+
+                q.x2 = xStart + xOffset;
+                q.y2 = heightMap[i][j+1];
+                q.z2 = zStart;
+
+                q.x3 = xStart + xOffset;
+                q.y3 = heightMap[i+1][j+1];
+                q.z3 = zStart + zOffset;
+
+                q.x4 = xStart;
+                q.y4 = heightMap[i+1][j];
+                q.z4 = zStart + zOffset;
                 q.type = GREEN;
-                printf("Quad[%d][%d] Heights:\n", i, j);
-                printf("  (%f) -> (%f)\n", q.y1, q.y2);
-                printf("  (%f) -> (%f)\n", q.y4, q.y3);
-            } else {
+            }else{
                 // Mark as invalid
                 q.x1 = -1;
                 q.y1 = -1;
@@ -619,4 +637,8 @@ void drawGreen(quad** quadArray, int rows, int columns) {
             drawQuad(quadArray[i][j]);
         }
     }
+}
+
+quad** createFairway(int length){
+
 }

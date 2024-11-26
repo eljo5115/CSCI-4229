@@ -81,6 +81,7 @@ float bumpiness = 0.2f; // Adjust this value for more/less bumpiness
 float radiusX = 5.0f; 
 float radiusZ = 3.0f;
 quad** green;
+quad** fairway;
 
 //textures
 unsigned int texture[5];
@@ -175,7 +176,7 @@ void initializeHole(){
          break;
    }
    green = createGreen(0,1,holeLength, rows,columns, 0.1, radiusX, radiusZ); // places green at the end of the hole
-
+   fairway = createFairway(holeLength);
 }
 
 
