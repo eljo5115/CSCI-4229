@@ -526,8 +526,8 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
         quadArray[i] = (quad*)malloc(columns * sizeof(quad));
     }
 
-    float xOffset = 1.0f; // Adjust as needed for quad size
-    float zOffset = 1.0f; // Adjust as needed for quad size
+    float xOffset = 0.8f; // Adjust as needed for quad size
+    float zOffset = 0.8f; // Adjust as needed for quad size
     float centerX = x; // Center of the ellipse
     float centerZ = z;
     float a = randomFloat(-0.5,0.7);
@@ -537,13 +537,15 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
     }else{
         b = randomFloat(-0.5,0.7);
     }
-    printf("Random a: %f, Random b: %f",a,b);
+    // printf("Random a: %f, Random b: %f",a,b);
     float heightMap[rows+1][columns+1];
-    initializePermutations();
+    initializePermutations(); //initialize permutations for the perlin noise function
+    float scale = 0.1;
     // Generate heights for the grid vertices
     for (int i = 0; i <= rows; i++) {
         for (int j = 0; j <= columns; j++) {
-            heightMap[i][j] = y + perlinNoise(x + j * xOffset - (columns * xOffset) / 2,z + i * zOffset - (rows * zOffset) / 2);
+            heightMap[i][j] = y+ perlinNoise(j*scale ,i*scale);
+            // printf("x: %d, y:%d = %f\n",i,j,heightMap[i][j]);
         }
     }
 
@@ -555,14 +557,19 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
             float zStart = z + i * zOffset - (rows * zOffset) / 2;
 
             // Check if the quad is within the shape
-            //if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2,a ,b , centerX, centerZ, radiusX, radiusZ)) {
+            if (isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2,a ,b , centerX, centerZ, radiusX, radiusZ)) {
+                float h1 = (heightMap[i][j] + heightMap[i][j+1] + heightMap[i+1][j] + heightMap[i+1][j+1]) * 0.25;
+                float h2 = (heightMap[i][j+1] + heightMap[i][j] + heightMap[i+1][j]) * 0.3333;
+                float h3 = (heightMap[i+1][j] + heightMap[i+1][j+1] + heightMap[i][j+1]) * 0.3333;
+                float h4 = (heightMap[i+1][j+1] + heightMap[i+1][j] + heightMap[i][j]) * 0.3333;
+                
                 // Valid quad coordinates
                 q.x1 = xStart;
                 q.y1 = heightMap[i][j];
                 q.z1 = zStart;
 
                 q.x2 = xStart + xOffset;
-                q.y2 = heightMap[i+1][j];
+                q.y2 = heightMap[i][j+1];
                 q.z2 = zStart;
 
                 q.x3 = xStart + xOffset;
@@ -570,15 +577,18 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
                 q.z3 = zStart + zOffset;
 
                 q.x4 = xStart;
-                q.y4 = heightMap[i][j+1];
+                q.y4 = heightMap[i+1][j];
                 q.z4 = zStart + zOffset;
                 q.type = GREEN;
-            //} else {
+                printf("Quad[%d][%d] Heights:\n", i, j);
+                printf("  (%f) -> (%f)\n", q.y1, q.y2);
+                printf("  (%f) -> (%f)\n", q.y4, q.y3);
+            } else {
                 // Mark as invalid
-            //     q.x1 = -1;
-            //     q.y1 = -1;
-            //     q.z1 = -1;
-            // }
+                q.x1 = -1;
+                q.y1 = -1;
+                q.z1 = -1;
+            }
 
             quadArray[i][j] = q;
         }

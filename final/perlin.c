@@ -4,7 +4,7 @@ int permutation[PERMUTATION_SIZE];
 
 void initializePermutations(){
     for(int i = 0; i< PERMUTATION_SIZE;i++){
-            permutation[i] = rand() % (200 - 0 + 1) + 0;
+            permutation[i] = rand() % (PERMUTATION_SIZE);
     }
 }
 
@@ -13,9 +13,11 @@ float perlinNoise(float x, float y) {
     int xi = (int)floor(x) & 255;
     int yi = (int)floor(y) & 255;
 
+    // printf("xi: %d, yi: %d\n",xi,yi);
     // Relative x, y coordinates within cell
     float xf = x - floor(x);
     float yf = y - floor(y);
+    // printf("xf: %f, yf: %f\n",xf,yf);
 
     // Fade curves
     float u = fade(xf);
@@ -33,6 +35,7 @@ float perlinNoise(float x, float y) {
     x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
     x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
 
+    // printf("Lerp result of %f, %f and %f: %f\n",x,y,v, lerp(x1,x2,v));
     return lerp(x1, x2, v);
 }
 
