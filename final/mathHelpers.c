@@ -31,3 +31,7 @@ void calculateNormal(float th, float ph, float* nx, float* ny, float* nz) {
     *ny = sin(th_rad) * sin(ph_rad);
     *nz = cos(ph_rad);
 }
+
+float interpolate(float p0, float p1, float t) {
+    return (1 - t) * p0 + t * p1;
+}

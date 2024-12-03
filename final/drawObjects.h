@@ -10,9 +10,14 @@ typedef struct {
     int type;
 } quad;
 
+typedef struct {
+    float x,y,z;
+} Point3D;
+
 
 #define FOREST_SEED 145
-#define GREEN_SEED 1000 //Random between 0-10000 for hourglass, random > 100000 for oval
+#define GREEN_SEED 100045 //Random between 0-10000 for hourglass, random > 100000 for oval
+#define HOLE_SEED 13000 //Seed for hole gen
 #define GRID_SIZE 50  // Number of grid cells along one axis
 #define HALF_GRID_SIZE GRID_SIZE/2
 #define CELL_SIZE 1.0f  // Size of each cell in the grid
@@ -36,17 +41,21 @@ void drawWater(GLuint texture);
 void initializeHeights();
 void createRiver();
 
-quad** createFairway(int length);
+quad** createFairway(Point3D greenLocation, int width,  int holeLength, int roughWidth);
+void drawFairway(quad** quadArray, int rows, int columns);
 
-quad** createGreen(float x, float y, float z, int rows, int columns, float bumpiness,float radiusX,float radiusZ);
+quad** createGreen(float x, float y, float z, int rows, int columns,float radiusX,float radiusZ);
 void drawGreen(quad** quadArray, int rows, int columns);
-void freeGreen(quad** quadArray, int rows);
 int isInvalidQuad(quad q);
-void drawTeeBox();
 int isInsideShape(float x, float z,float a, float b ,float centerX, float centerZ, float radiusX, float radiusZ);
-void drawFairway();
 
-void drawQuad(quad q);
 void createTeeBox(float width, float depth, float height,float bottomOffset);
+void drawTeeBox();
+
+Point3D catmullRomSpline(Point3D p0, Point3D p1, Point3D p2, Point3D p3, float t);
+
+void freeQuadArray(quad** quadArray, int rows);
+void drawQuad(quad q);
 void calculateNormalAndSet(quad q);
+Point3D* generateRandomControlPoints(int numPoints, float width, float length);
 #endif

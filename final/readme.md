@@ -1,15 +1,13 @@
 <h1>Eli Jordan: Procedural Golf Course</h1>
+<p>What is currently lacking is the final camera mode (flyover) and adding some various trees. I need to add some variation to the fairway shape but my initial implementation did not work very well. I'm also planning on making the fairway much wider so that I can draw trees and add some completeness to the scene. If that gets done before too long, I'll start trying to add some random water or sand.</p>
+<p>Ambient light is cranked at the moment for easy viewing of the entire terrain.</p>
 <ol>
-    <li>Navigate into the directory <code>cd hw6</code></li>
-    <li>Run <code>make</code> this should make an executable called hw6</li>
-    <li>Run <code>./hw6</code></li>
+    <li>Run <code>make</code> this should make an executable called main</li>
+    <li>Run <code>./main</code></li>
 </ol>
 <h3>Controls</h3>
 <ul>
-    <li>w,a,s,d to move around the scene in first person</li>
-    <li>Arrows to change view angle</li>
-    <li>ESC to exit</li>
-    <li>0 to reset view angle</li>
-    <li>m/M to change view mode</li>
-    <li>f/F to change light mode/position</li>
+    <li>m to change camera modes</li>
+    <li>f to change light position</li>
+    <li>n to generate new hole</li>
 </ul>

@@ -271,10 +271,6 @@ void drawGround(GLuint texture) {
             }
             // Normalize the normal vector
             normalize(normal);
-
-            if (_DEBUG){
-                printf("Ground normal: %f, %f, %f\n", normal[0],normal[1],normal[2]);
-            }
             // Set normal for the quad
             glNormal3fv(normal);
 
@@ -365,6 +361,7 @@ void renderNormalDebug(quad q) {
 
     // Draw a line from the center of the quad along the normal
     glBegin(GL_LINES);
+    glColor3ub(250,0,0);
     glVertex3f(center[0], center[1], center[2]);
     glVertex3f(center[0] + normal[0] * 0.5f, center[1] + normal[1] * 0.5f, center[2] + normal[2] * 0.5f);
     glEnd();
@@ -387,7 +384,61 @@ void calculateNormalAndSet(quad q) {
     }
     glNormal3f(normal[0], normal[1], normal[2]);
 }
+void drawCylinder(float radius, float height) {
+    // Draw the side of the cylinder
+    glBegin(GL_QUAD_STRIP);
+    for (int i = 0; i <= SLICES; ++i) {
+        float angle = 2 * PI * i / SLICES;
+        float x = cos(angle) * radius;
+        float z = sin(angle) * radius;
+        
+        // Normals for cylinder sides
+        glNormal3f(cos(angle), 0.0f, sin(angle));
+        
+        // Vertex at bottom of cylinder
+        glVertex3f(x, 0.0f, z);
+        // Vertex at top of cylinder
+        glVertex3f(x, height, z);
+    }
+    glEnd();
 
+    // Draw the bottom circle
+    glBegin(GL_TRIANGLE_FAN);
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    for (int i = 0; i <= SLICES; ++i) {
+        float angle = 2 * PI * i / SLICES;
+        float x = cos(angle) * radius;
+        float z = sin(angle) * radius;
+        glVertex3f(x, 0.0f, z);
+    }
+    glEnd();
+}
+
+void drawFlag(float x, float y, float z, float stickHeight, float flagWidth, float flagHeight) {
+    // Translate the flag to the specified position
+    glPushMatrix();
+    glTranslatef(x, y, z);
+
+    // Set the color for the flag stick
+    glColor3f(0.5f, 0.5f, 0.5f);
+    
+    // Draw the stick
+    drawCylinder(0.02f, stickHeight);
+
+    // Set the color for the flag
+    glColor3f(1.0f, 0.0f, 0.0f);
+
+    // Draw the flag as a single triangle
+    glBegin(GL_TRIANGLES);
+    glVertex3f(0.0f, stickHeight, 0.0f);                // Base point attached to the stick
+    glVertex3f(flagWidth, stickHeight - flagHeight, 0.0f); // Top corner of the flag
+    glVertex3f(flagWidth, stickHeight, 0.0f);              // Tip of the flag
+    glEnd();
+
+    // Restore the previous transformation state
+    glPopMatrix();
+}
 /*
 Draws the given quad struct (q)
 Can be called in display func
@@ -402,13 +453,16 @@ void drawQuad(quad q) {
     //switch based on type of quad
     switch(q.type){
         case FAIRWAY:
-            glColor3f(0.2f,1.0f,0.0f);
+            glColor3ub(24,230,13);
             break;
         case ROUGH:
-            glColor3f(0.15f,0.6f,0.15f);
+            glColor3ub(20,180,30);
             break;
         case GREEN:
             glColor3ub(47,250,60);
+            break;
+        default:
+            glColor3ub(0,0,255);
             break;
     }
     //draw quad
@@ -508,7 +562,20 @@ int isInsideShape(float x, float z,float a,float b ,float centerX, float centerZ
     float dz = z - centerZ;
     return (a * (dx * dx) / (radiusX * radiusX) + b * (dz * dz) / (radiusZ * radiusZ)) <= 1.0f;
 }
+// Function to return true based on a given probability
+bool randomProbability(float probability) {
+    if (probability < 0.0f || probability > 1.0f) {
+        // Handle invalid probability values
+        fprintf(stderr, "Probability must be between 0 and 1\n");
+        return false;
+    }
 
+    // Generate a random float between 0 and 1
+    float randomValue = (float)rand() / RAND_MAX;
+
+    // Return true if the random value is less than the probability
+    return randomValue < probability;
+}
 /*
 Function to create a green with bumps, hills, and a predefined shape
 Params: 
@@ -519,8 +586,9 @@ radiusX, radiusZ - floats for the shape equation
 Returns:
 quad[][] - 2d array of quads (struct) that have the absolute position of the green
 */
-quad** createGreen(float x, float y, float z, int rows, int columns, float bumpiness, float radiusX, float radiusZ) {
-    srand(GREEN_SEED);
+quad** createGreen(float x, float y, float z, int rows, int columns, float radiusX, float radiusZ) {
+    // srand(GREEN_SEED);
+    bool flagPlaced = false;
     quad** quadArray = (quad**)malloc(rows * sizeof(quad*));
     for (int i = 0; i < rows; ++i) {
         quadArray[i] = (quad*)malloc(columns * sizeof(quad));
@@ -580,6 +648,8 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
                 q.y4 = heightMap[i+1][j];
                 q.z4 = zStart + zOffset;
                 q.type = ROUGH;
+                
+                
                 // printf("Quad[%d][%d] Heights:\n", i, j);
                 // printf("  (%f) -> (%f)\n", q.y1, q.y2);
                 // printf("  (%f) -> (%f)\n", q.y4, q.y3);
@@ -601,6 +671,15 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
                 q.y4 = heightMap[i+1][j];
                 q.z4 = zStart + zOffset;
                 q.type = GREEN;
+                if(!flagPlaced){
+                    if(randomProbability(0.1)){
+                        float center[3] = {(q.x1 + q.x2 + q.x3 + q.x4) / 4.0f,
+                       (q.y1 + q.y2 + q.y3 + q.y4) / 4.0f,
+                       (q.z1 + q.z2 + q.z3 + q.z4) / 4.0f};
+                       drawFlag(center[0],center[1],center[2],2,3,2);
+                       flagPlaced = true;
+                    }
+                }
             }else{
                 // Mark as invalid
                 q.x1 = -1;
@@ -615,7 +694,7 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float bumpi
     return quadArray;
 }
 // A function to free the allocated memory for quads
-void freeGreen(quad** quadArray, int rows) {
+void freeQuadArray(quad** quadArray, int rows) {
     for (int i = 0; i < rows; ++i) {
         free(quadArray[i]);
     }
@@ -639,6 +718,116 @@ void drawGreen(quad** quadArray, int rows, int columns) {
     }
 }
 
-quad** createFairway(int length){
+// Catmull-Rom spline interpolation
+Point3D catmullRomSpline(Point3D p0, Point3D p1, Point3D p2, Point3D p3, float t) {
+    // Catmull-Rom parameters
+    float t2 = t * t;
+    float t3 = t2 * t;
 
+    Point3D result;
+    result.x = 0.5 * ((2*p1.x) + (-p0.x + p2.x) * t + 
+                      (2*p0.x - 5*p1.x + 4*p2.x - p3.x) * t2 +
+                      (-p0.x + 3*p1.x - 3*p2.x + p3.x) * t3);
+    result.y = 0.5 * ((2*p1.y) + (-p0.y + p2.y) * t + 
+                      (2*p0.y - 5*p1.y + 4*p2.y - p3.y) * t2 +
+                      (-p0.y + 3*p1.y - 3*p2.y + p3.y) * t3);
+    result.z = 0.5 * ((2*p1.z) + (-p0.z + p2.z) * t + 
+                      (2*p0.z - 5*p1.z + 4*p2.z - p3.z) * t2 +
+                      (-p0.z + 3*p1.z - 3*p2.z + p3.z) * t3);
+    return result;
+}
+void initializeControlPoints(Point3D* controlPoints, int numControlPoints, int holeLength, int width) {
+    for (int i = 1; i < numControlPoints - 1; i++) {
+        controlPoints[i] = (Point3D){
+            randomFloat(-width / 2.0, width / 2.0),
+            0.0,
+            randomFloat((i * holeLength) / numControlPoints, ((i+1) * holeLength) / numControlPoints)
+        };
+    }
+}
+// Main fairway creation
+quad** createFairway(Point3D greenLocation, int width, int holeLength, int roughWidth) {
+    // srand(HOLE_SEED);
+    
+    int totalWidth = width + 2 * roughWidth;
+    
+    // Allocate memory for quads
+    quad** quadArray = (quad**)malloc(totalWidth * sizeof(quad*));
+    for (int i = 0; i < totalWidth; ++i) {
+        quadArray[i] = (quad*)malloc(holeLength * sizeof(quad));
+    }
+    float heightMap[holeLength+1][totalWidth+1];
+    initializePermutations(); //initialize permutations for the perlin noise function
+    float scale = 0.1;
+    float heightScale = 2; // fairway noise is bigger
+    // Generate heights for the grid vertices
+    for (int i = 0; i <= holeLength; i++) {
+        for (int j = 0; j <= totalWidth; j++) {
+            heightMap[i][j] = perlinNoise(j*scale ,i*scale) * heightScale;
+            // printf("x: %d, y:%d = %f\n",i,j,heightMap[i][j]);
+        }
+    }
+
+    float xOffset = 1.0f; // Distance between quad vertices in x
+    float zOffset = 1.0f; // Distance between quad vertices in z
+
+    // Generate a "flat" grid between (0, 0, 0) and greenLocation
+    for (int x = 0; x < totalWidth; ++x) {
+        for (int z = 0; z < holeLength; ++z) {
+            quad q;
+
+            q.x1 = x * xOffset - (totalWidth/2);
+            q.y1 = heightMap[x][z];  // Flat surface
+            q.z1 = z * zOffset;
+
+            q.x2 = (x + 1) * xOffset - (totalWidth/2);
+            q.y2 = heightMap[x+1][z];  // Flat surface
+            q.z2 = z * zOffset;
+
+            q.x3 = (x + 1) * xOffset - (totalWidth/2);
+            q.y3 = heightMap[x+1][z+1];  // Flat surface
+            q.z3 = (z + 1) * zOffset;
+
+            q.x4 = x * xOffset - (totalWidth/2);
+            q.y4 = heightMap[x][z+1];  // Flat surface
+            q.z4 = (z + 1) * zOffset;
+            if(x < roughWidth || x >= totalWidth - roughWidth){
+                q.type = ROUGH;
+            }else{
+                q.type = FAIRWAY;
+            }
+            quadArray[x][z] = q;
+        }
+    }
+    return quadArray;
+}
+
+void drawFairway(quad** quadArray, int rows, int columns){
+    for(int i = 0; i<columns; i++){
+        for(int j=0;j<rows;j++){
+            drawQuad(quadArray[i][j]);
+        }
+    }
+}
+
+// Generate random control points for a spline
+Point3D* generateRandomControlPoints(int numPoints, float width, float length) {
+    Point3D* controlPoints = (Point3D*)malloc(numPoints * sizeof(Point3D));
+    if (!controlPoints) {
+        perror("Failed to allocate memory for control points");
+        exit(EXIT_FAILURE);
+    }
+
+    // Seed the random number generator
+    srand(HOLE_SEED);
+
+    // Generate control points
+    for (int i = 0; i < numPoints; i++) {
+        controlPoints[i].x = randomFloat(-width / 2.0, width / 2.0);
+        controlPoints[i].y = 0.0; // Assuming flat for control points, modify for height variations
+        controlPoints[i].z = randomFloat(0, length);
+        printf("Control Point %d: (%f, %f, %f)\n", i, controlPoints[i].x, controlPoints[i].y, controlPoints[i].z);
+    }
+
+    return controlPoints;
 }

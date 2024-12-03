@@ -64,25 +64,28 @@ int light     =   1;  // Lighting
 int one       =   1;  // Unit value
 int distance  =   25;  // Light distance
 
-int ambient   =  10;  // Ambient intensity (%)
+int ambient   =  50;  // Ambient intensity (%)
 int diffuse   =  50;  // Diffuse intensity (%)
 int specular  =   0;  // Specular intensity (%)
 int local     =   0;  // Local Viewer Model
 int zh        =  90;  // Light azimuth
-float ylight  =   15;  // Elevation of light
-const char* text[] = {"Ortho","Top-Down Perspective","First Person"};
+float ylight  =   40;  // Elevation of light
+const char* text[] = {"Tee Box","Green View","First Person"};
 
 // Parameters for the green
 int rows = 40;
 int columns = 40;
 float greenWidth = 10;
 float greenDepth = 10;
-float bumpiness = 0.2f; // Adjust this value for more/less bumpiness
 float radiusX = 5.0f; 
 float radiusZ = 3.0f;
+int holeLength;
+int fairwayWidth;
+int roughWidth;
+int par = 0;
 quad** green;
 quad** fairway;
-
+Point3D greenLoc;
 //textures
 unsigned int texture[5];
 
@@ -156,8 +159,12 @@ Returns:
 None, uses global vars
 */
 void initializeHole(){
-   int par = 3; //random choice from 3,4,5
-   int holeLength = 10; //used to place green (i.e. z position)
+   srand(time(NULL));
+   par = generateRandomInt(3,5); //random choice from 3,4,5
+   holeLength = 10; //used to place green (i.e. z position)
+   fairwayWidth = generateRandomInt(30,50);
+   roughWidth = generateRandomInt(30,50);
+   int numPoints = 8;
    switch(par){
       case 3:
       //random int between 160-220
@@ -172,11 +179,15 @@ void initializeHole(){
          holeLength = generateRandomInt(490,650);
          break;
       default:
-      holeLength = 50; //obvious that something broke
+         holeLength = 20; //obvious that something broke
          break;
    }
-   green = createGreen(0,1,holeLength, rows,columns, 0.1, radiusX, radiusZ); // places green at the end of the hole
-   fairway = createFairway(holeLength);
+   greenLoc.x = generateRandomInt(-10,10);
+   greenLoc.y = 0;
+   greenLoc.z = holeLength;
+   green = createGreen(greenLoc.x,greenLoc.y,holeLength, rows,columns, radiusX, radiusZ); // places green at the end of the hole
+   // Point3D* points = generateRandomControlPoints(numPoints,fairwayWidth,holeLength);
+   fairway = createFairway(greenLoc,fairwayWidth,holeLength, roughWidth);
 }
 
 
@@ -193,11 +204,35 @@ void topDownPerspective(){
 }
 
 void firstPersonPerspective(){
+   ph = -10;
+   th = -180;
     dirx = Cos(ph)*Sin(th);
     diry = Sin(ph);
     dirz = -Cos(ph)*Cos(th);
+    ypos = 10;
     gluLookAt(xpos,ypos,zpos , dirx+xpos,diry+ypos,dirz+zpos , 0,1,0);
     ErrCheck("First Person");
+}
+void teeBoxView(){
+   ph=-180;
+   th = 0;
+   dirx = Cos(ph)*Sin(th);
+    diry = Sin(ph);
+    dirz = -Cos(ph)*Cos(th);
+   gluLookAt(0,5,0, dirx, diry+5, dirz, 0,1,0);
+   ErrCheck("Tee Box Camera");
+}
+
+void greenView(){
+   if(ph < 30){
+      ph = 30;
+   }else if(ph > 80){
+      ph= 80;
+   }
+   double Ex = -2*dim*Sin(th)*Cos(ph);
+   double Ey = +2*dim        *Sin(ph);
+   double Ez = +2*dim*Cos(th)*Cos(ph);
+   gluLookAt(greenLoc.x + Ex,greenLoc.y+ Ey+10,greenLoc.z + Ez , greenLoc.x,greenLoc.y,greenLoc.z , 0,1,0);
 }
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
@@ -214,17 +249,15 @@ void display()
    //  Undo previous transformations
    glLoadIdentity();
     if(mode == 0){
-    // ortho view
-        glRotatef(ph,1,0,0);
-        glRotatef(th,0,1,0);
+    // tee box view
+      teeBoxView();
     }
     else if(mode==1){
-    // top-down perspective
-        topDownPerspective();
+    // top-down perspective of green
+        greenView();
     }
     else if(mode==2){
-    //first person perspective
-    //camera position
+    //Flyover view of hole
         firstPersonPerspective();
     }
        //  Light switch
@@ -286,11 +319,12 @@ void display()
 
 
     // Render the green
-    drawGreen(green, rows, columns);
-
+   drawGreen(green, rows, columns);
+   //render the fairway
+   drawFairway(fairway,holeLength,fairwayWidth+2*roughWidth);
    
    createTeeBox(3,6,3,1.8f);
-   drawGround(texture[1]);
+   // drawGround(texture[1]);
    //  White
    glColor3f(1,1,1);
    //  Draw axes
@@ -316,7 +350,7 @@ void display()
    //  Five pixels from the lower left corner of the window
    glWindowPos2i(5,5);
    //  Print the text string
-   Print("Angle=%d,%d   Mode: %s, Light mode: %d",th,ph,text[mode],lightMode);
+   Print("Par=%d - Yardage: %d Mode: %s, Light mode: %d",par,holeLength,text[mode],lightMode);
    //  Render the scene
    ErrCheck("display");
 
@@ -361,7 +395,7 @@ void special(int key,int x,int y)
    ph %= 360;
 
    ErrCheck("Special");
-   Project(mode?fov:0,asp,dim);
+   Project(mode?fov:45,asp,dim);
    //  Tell GLUT it is necessary to redisplay the scene
    glutPostRedisplay();
 }
@@ -372,9 +406,9 @@ void changeMode(int inc){
         mode = (mode+2)%3;
     if(mode == 2){
         th=0;
-        ph = 0;
+        ph =-180;
         xpos=0;
-        zpos=0;
+        zpos=10;
     }
 }
 void changeLightMode(int inc){
@@ -414,27 +448,10 @@ void key(unsigned char ch,int x,int y)
    else if (ch == 'f'){
       //inc lightmode
       changeLightMode(1);
+   }else if (ch == 'n'){
+      initializeHole();
    }
-    if(mode==2){
-        axes=0;
-        if(ch == 'w'){
-            zpos += VELOCITY * dirz;
-            xpos += VELOCITY * dirx;
-        }
-        else if(ch == 's'){
-            zpos -= VELOCITY * dirz;
-            xpos -= VELOCITY * dirx;
-        }
-        else if(ch == 'a'){
-            xpos += VELOCITY * dirz;
-            zpos -= VELOCITY * dirx;
-        }
-        else if(ch == 'd'){
-            xpos -= VELOCITY * dirz;
-            zpos += VELOCITY * dirx;
-        }
-    }
-    Project(mode?fov:0,asp,dim);
+    Project(mode?fov:60,asp,dim);
    //  Tell GLUT it is necessary to redisplay the scene
    glutPostRedisplay();
 }
@@ -450,7 +467,7 @@ void reshape(int width,int height)
    //  Undo previous transformations
    glLoadIdentity();
    //  Orthogonal projection
-   double asp = (height>0) ? (double)width/height : 1;
+   // double asp = (height>0) ? (double)width/height : 1;
    //setupPerspectiveCamera();
    //glOrtho(-asp*dim,+asp*dim, -dim,+dim, -dim,+dim);
    //  Switch to manipulating the model matrix
@@ -458,7 +475,7 @@ void reshape(int width,int height)
    //  Undo previous transformations
    glLoadIdentity();
 
-   Project(mode?fov:0,asp,dim);
+   Project(mode?fov:45,asp,dim);
 }
 /*
  *  GLUT calls this routine when there is nothing else to do
@@ -467,8 +484,14 @@ void idle()
 {
    double t = glutGet(GLUT_ELAPSED_TIME)/1000.0;
    zh = fmod(180*t,1440);
+   if(mode == 2 && zpos <= holeLength+30){
+      zpos += t*0.2;
+   }else{
+      zpos = 0;
+   }
    glutPostRedisplay();
 }
+
 /*
  *  Start up GLUT and tell it what to do
  */
@@ -490,11 +513,14 @@ int main(int argc,char* argv[])
    glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
    //  Tell GLUT to call "idle" when there is nothing else to do
    glutIdleFunc(idle);
-   //Initialize heights for drawing ground cells
-   initializeHeights();
-   
-   green = createGreen(20, 1, 20, rows, columns, bumpiness,radiusX,radiusZ);
-   // initializeHole();
+   // // for testing
+   // green = createGreen(20, 1, 20, rows, columns,radiusX,radiusZ);
+   // Point3D fairwayEnd;
+   // fairwayEnd.x = 30;
+   // fairwayEnd.y = 5;
+   // fairwayEnd.z = 10;
+   // fairway = createFairway(fairwayEnd, 8, 20, 10, 10);
+   initializeHole();
    //  Tell GLUT to call "display" when the scene should be drawn
    glutDisplayFunc(display);
    //  Tell GLUT to call "reshape" when the window is resized
@@ -504,14 +530,15 @@ int main(int argc,char* argv[])
    //  Tell GLUT to call "key" when a key is pressed
    glutKeyboardFunc(key);
 //    //Load textures
-   texture[0] = LoadTexBMP("textures/trunk.bmp");
-   texture[1] = LoadTexBMP("textures/grass.bmp");
-   texture[2] = LoadTexBMP("textures/water.bmp");
+   // texture[0] = LoadTexBMP("textures/trunk.bmp");
+   // texture[1] = LoadTexBMP("textures/grass.bmp");
+   // texture[2] = LoadTexBMP("textures/water.bmp");
 //    texture[3] = LoadTexBMP("brick.bmp");
 //    texture[4] - LoadTexBMP("leaves.bmp");
 
    //  Pass control to GLUT so it can interact with the user
    glutMainLoop();
-   freeGreen(green, rows);
+   freeQuadArray(green, rows);
+   freeQuadArray(fairway,holeLength);
    return 0;
 }
