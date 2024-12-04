@@ -14,6 +14,15 @@ float heights[GRID_SIZE][GRID_SIZE];
 
 #define SLICES 32
 
+typedef struct {
+    Point3D location;
+    float a,b;
+    float centerX,centerZ;
+    float radiusX,radiusZ;
+} greenData;
+
+greenData sharedGreen;
+
 /*
  *  Draw vertex in polar coordinates with normal
  */
@@ -132,7 +141,7 @@ void drawIcosahedron(GLuint texture) {
 }
 
 // Draw the tree trunk as a cylinder
-void drawTrunk(GLuint texture) {
+void drawTrunk() {
     //set materials
     float white[] = {1,1,1,1};
     float Emission[]  = {0.0,0.0,0.01*emission,1.0};
@@ -143,7 +152,7 @@ void drawTrunk(GLuint texture) {
     glEnable(GL_TEXTURE_2D);
     glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
     glColor3f(1,1,1);
-    glBindTexture(GL_TEXTURE_2D,texture);
+    // glBindTexture(GL_TEXTURE_2D,texture);
 
     float radius = 0.1f;
     float height = 2.0f;
@@ -178,13 +187,12 @@ void drawTrunk(GLuint texture) {
     }
     glEnd();
 }
-
-void drawPalmLeaf(double x, double y, double z, float r, int segments, float angleOffset, GLuint texture) {
+void drawPalmLeaf(double x, double y, double z, float r, int segments, float angleOffset) {
     //  Enable textures
     glEnable(GL_TEXTURE_2D);
     glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
     glColor3f(1,1,1);
-    glBindTexture(GL_TEXTURE_2D,texture);
+    // glBindTexture(GL_TEXTURE_2D,texture);
     
     // Save transformation
     glPushMatrix();
@@ -214,7 +222,45 @@ void drawPalmLeaf(double x, double y, double z, float r, int segments, float ang
     // Undo transformations
     glPopMatrix();
 }
+void drawPalmTreeLeaves(double x, double y, double z, int numLeaves, float leafRadius, int leafSegments) {
+    // x,y,z is central point (top of trunk)
+    for (int i = 0; i < numLeaves; i++) {
+        float angleOffset = 2 * PI * i / numLeaves;
+        // double Lx;
+        // double Lz; 
+        // Lx = leafRadius * Cos(i*angInc);
+        // Lz = leafRadius * Sin(i*angInc);
+        glPushMatrix();
+        glRotatef(angleOffset *180/PI, 0, 1, 0);  // Rotate each leaf around y-axis
+        drawPalmLeaf(x,y,z,leafRadius, leafSegments, -PI / 2);  // Draw leaf
+        glPopMatrix();
+    }
+}
+void drawTree(float x, float y, float z,float height) {
+    glPushMatrix();
+    glScalef(1,height,1);
+    // Translate to the specified position
+    glTranslatef(x, y, z);
 
+    // Draw the trunk
+    glColor3f(0.55f, 0.27f, 0.07f); // Brown color
+    drawTrunk();
+    
+    // Draw leaves as icosahedrons
+    glColor3f(0.0f, 1.0f, 0.0f); // Green color
+    
+    // Translate to the top of the trunk
+    glTranslatef(0,2,0);
+    //glRotated();
+    // Draw leaves as palm leaves
+    glColor3f(0.0f, 1.0f, 0.0f); // Green color
+    drawPalmTreeLeaves(0,0,0,   12,0.8,20);  // 12 leaves, radius 0.8, 20 segments per leaf
+    drawPalmTreeLeaves(0,0.2f,0,    10, 0.5,20);  // 10 leaves, radius 0.5, 20 segments per leaf
+
+    glPopMatrix();
+    
+
+}
 // Function to initialize heights for the grid
 void initializeHeights() {
     srand(FOREST_SEED);
@@ -461,6 +507,9 @@ void drawQuad(quad q) {
         case GREEN:
             glColor3ub(47,250,60);
             break;
+        case BUNKER:
+            glColor3ub(255,242,122);
+            break;
         default:
             glColor3ub(0,0,255);
             break;
@@ -562,6 +611,22 @@ int isInsideShape(float x, float z,float a,float b ,float centerX, float centerZ
     float dz = z - centerZ;
     return (a * (dx * dx) / (radiusX * radiusX) + b * (dz * dz) / (radiusZ * radiusZ)) <= 1.0f;
 }
+
+int isInsideGreen(float x, float z,float a,float b ,float centerX, float centerZ, float radiusX, float radiusZ){
+        // Calculate the delta values
+    float dx = x - centerX;
+    float dz = z - centerZ;
+
+    // Check if inside the ellipse-like boundary
+    int insideEllipse = (a * (dx * dx) / (radiusX * radiusX) + b * (dz * dz) / (radiusZ * radiusZ)) <= 1.0f;
+
+    // Restrict check to within predefined rectangular bounds
+    int withinBounds = (x >= centerX - radiusX) && (x <= centerX + radiusX) &&
+                       (z >= centerZ - radiusZ) && (z <= centerZ + radiusZ);
+
+    // Return true only if both conditions are satisfied
+    return insideEllipse && withinBounds;
+}
 // Function to return true based on a given probability
 bool randomProbability(float probability) {
     if (probability < 0.0f || probability > 1.0f) {
@@ -576,6 +641,10 @@ bool randomProbability(float probability) {
     // Return true if the random value is less than the probability
     return randomValue < probability;
 }
+
+int generateRandomInt(int min, int max){
+   return rand() % (max - min + 1) + min;
+}
 /*
 Function to create a green with bumps, hills, and a predefined shape
 Params: 
@@ -588,6 +657,8 @@ quad[][] - 2d array of quads (struct) that have the absolute position of the gre
 */
 quad** createGreen(float x, float y, float z, int rows, int columns, float radiusX, float radiusZ) {
     // srand(GREEN_SEED);
+    sharedGreen.radiusX = radiusX;
+    sharedGreen.radiusZ = radiusZ;
     bool flagPlaced = false;
     quad** quadArray = (quad**)malloc(rows * sizeof(quad*));
     for (int i = 0; i < rows; ++i) {
@@ -596,14 +667,14 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float radiu
 
     float xOffset = 0.8f; // Adjust as needed for quad size
     float zOffset = 0.8f; // Adjust as needed for quad size
-    float centerX = x; // Center of the ellipse
-    float centerZ = z;
-    float a = randomFloat(-0.5,0.7);
-    float b;
-    if((a < 0.1 && a > 0) || a<0 ){
-        b = randomFloat(0.2,0.9);
+    sharedGreen.centerX = x;
+    sharedGreen.centerZ = z;
+    sharedGreen.a = randomFloat(-0.5,0.7);
+
+    if((sharedGreen.a < 0.1 && sharedGreen.a > 0) || sharedGreen.a<0 ){
+        sharedGreen.b = randomFloat(0.2,0.9);
     }else{
-        b = randomFloat(-0.5,0.7);
+        sharedGreen.b = randomFloat(-0.5,0.7);
     }
     // printf("Random a: %f, Random b: %f",a,b);
     float heightMap[rows+1][columns+1];
@@ -624,12 +695,12 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float radiu
             float xStart = x + j * xOffset - (columns * xOffset) / 2;
             float zStart = z + i * zOffset - (rows * zOffset) / 2;
 
-            bool inside = isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, a, b, centerX, centerZ, radiusX, radiusZ);
+            bool inside = isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, sharedGreen.a, sharedGreen.b, sharedGreen.centerX, sharedGreen.centerZ, radiusX, radiusZ);
 
             // Check if the quad is within the shape
             if (!inside && (
-                isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, a, b, centerX, centerZ, radiusX + xOffset, radiusZ) ||
-                isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, a, b, centerX, centerZ, radiusX, radiusZ + zOffset)) )
+                isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, sharedGreen.a, sharedGreen.b, sharedGreen.centerX, sharedGreen.centerZ, radiusX + xOffset, radiusZ) ||
+                isInsideShape(xStart + xOffset / 2, zStart + zOffset / 2, sharedGreen.a, sharedGreen.b, sharedGreen.centerX, sharedGreen.centerZ, radiusX, radiusZ + zOffset)) )
                 {                
                 // Valid quad coordinates
                 q.x1 = xStart;
@@ -648,7 +719,7 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float radiu
                 q.y4 = heightMap[i+1][j];
                 q.z4 = zStart + zOffset;
                 q.type = ROUGH;
-                
+                q.hasFlag = false;
                 
                 // printf("Quad[%d][%d] Heights:\n", i, j);
                 // printf("  (%f) -> (%f)\n", q.y1, q.y2);
@@ -671,12 +742,14 @@ quad** createGreen(float x, float y, float z, int rows, int columns, float radiu
                 q.y4 = heightMap[i+1][j];
                 q.z4 = zStart + zOffset;
                 q.type = GREEN;
+                q.hasFlag = false;
+                //flag not yet placed
                 if(!flagPlaced){
-                    if(randomProbability(0.1)){
-                        float center[3] = {(q.x1 + q.x2 + q.x3 + q.x4) / 4.0f,
-                       (q.y1 + q.y2 + q.y3 + q.y4) / 4.0f,
-                       (q.z1 + q.z2 + q.z3 + q.z4) / 4.0f};
-                       drawFlag(center[0],center[1],center[2],2,3,2);
+                    //random chance of quad having flag
+                    if(randomProbability(0.3)){
+                        //give quad flag
+                        q.hasFlag = true;
+                        //flag has been placed
                        flagPlaced = true;
                     }
                 }
@@ -714,6 +787,9 @@ void drawGreen(quad** quadArray, int rows, int columns) {
         for (int j = 0; j < columns; j++) {
             if (isInvalidQuad(quadArray[i][j]))continue;
             drawQuad(quadArray[i][j]);
+            if(quadArray[i][j].hasFlag){
+                drawFlag(quadArray[i][j].x1,quadArray[i][j].y1,quadArray[i][j].z1,3,3,4);
+            }
         }
     }
 }
@@ -768,6 +844,20 @@ quad** createFairway(Point3D greenLocation, int width, int holeLength, int rough
         }
     }
 
+    int widthMap[holeLength+1]; // used to randomize fairway width through path
+    widthMap[0] = width;
+    for(int i = 1; i <= holeLength; i++){
+        int posChange = generateRandomInt(0,width);
+        int negChange = generateRandomInt(-width,0);
+        // if(widthMap[i-1]+posChange < totalWidth - width){
+        //     widthMap[i] = widthMap[i-1] + posChange;
+        // }else if(widthMap[i-1]+negChange < 0){
+        //     widthMap[i] = widthMap[i-1] + negChange;
+        // }
+        widthMap[i] = -Cos(i)*width;
+    }
+
+
     float xOffset = 1.0f; // Distance between quad vertices in x
     float zOffset = 1.0f; // Distance between quad vertices in z
 
@@ -791,12 +881,41 @@ quad** createFairway(Point3D greenLocation, int width, int holeLength, int rough
             q.x4 = x * xOffset - (totalWidth/2);
             q.y4 = heightMap[x][z+1];  // Flat surface
             q.z4 = (z + 1) * zOffset;
-            if(x < roughWidth || x >= totalWidth - roughWidth){
+            if(x < widthMap[z] || x >= totalWidth - widthMap[z]){
                 q.type = ROUGH;
+                q.hasTree = false;
+                if(randomProbability(0.05)){
+                    q.hasTree = true;
+                }
             }else{
+                q.hasTree = false;
                 q.type = FAIRWAY;
             }
+            if(isInsideGreen(q.x1,q.z1,sharedGreen.a,sharedGreen.b,sharedGreen.centerX,sharedGreen.centerZ,sharedGreen.radiusX,sharedGreen.radiusZ) 
+            && q.z1 > holeLength-sharedGreen.radiusZ
+            ){
+                q.x1 = -1;
+                q.y1 = -1;
+                q.z1 = -1;
+            }
             quadArray[x][z] = q;
+        }
+    }
+    int numBunkerAttempts = generateRandomInt(1,5);
+    //try to create a bunker a number of times
+    for(int i = 0; i<numBunkerAttempts; i++){
+        int bunkerX = generateRandomInt(0,totalWidth);
+        int bunkerZ = generateRandomInt(0,holeLength);
+        int bunkerSize = generateRandomInt(10,30);
+        //loop back through array to find rough and create bunkers
+        if(randomProbability(0.5)) // probability of having a bunker
+        {
+            for(int x = bunkerX-bunkerSize; x < totalWidth && x > 0 && x < bunkerX+bunkerSize; x++){
+                for(int z = bunkerZ-bunkerSize; z<holeLength && z >= 0 && z<bunkerZ + bunkerSize; z++){
+                        quadArray[x][z].type = BUNKER;
+
+                }
+            }
         }
     }
     return quadArray;
@@ -805,7 +924,10 @@ quad** createFairway(Point3D greenLocation, int width, int holeLength, int rough
 void drawFairway(quad** quadArray, int rows, int columns){
     for(int i = 0; i<columns; i++){
         for(int j=0;j<rows;j++){
-            drawQuad(quadArray[i][j]);
+            if(!isInvalidQuad(quadArray[i][j])) drawQuad(quadArray[i][j]);
+            if(quadArray[i][j].hasTree){
+                drawTree(quadArray[i][j].x1,quadArray[i][j].y1,quadArray[i][j].z1,8);
+            }
         }
     }
 }

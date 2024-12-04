@@ -92,46 +92,7 @@ unsigned int texture[5];
 #define VELOCITY 0.5f
 
 
-void drawPalmTreeLeaves(double x, double y, double z, int numLeaves, float leafRadius, int leafSegments) {
-    // x,y,z is central point (top of trunk)
-    for (int i = 0; i < numLeaves; i++) {
-        float angleOffset = 2 * PI * i / numLeaves;
-        // double Lx;
-        // double Lz; 
-        // Lx = leafRadius * Cos(i*angInc);
-        // Lz = leafRadius * Sin(i*angInc);
-        glPushMatrix();
-        glRotatef(angleOffset *180/PI, 0, 1, 0);  // Rotate each leaf around y-axis
-        drawPalmLeaf(x,y,z,leafRadius, leafSegments, -PI / 2, texture[1]);  // Draw leaf
-        glPopMatrix();
-    }
-}
-// Draw the tree with icosahedrons as leaves at a specified position
-void drawTree(float x, float y, float z,float height) {
-    glPushMatrix();
-    glScalef(1,height,1);
-    // Translate to the specified position
-    glTranslatef(x, y, z);
 
-    // Draw the trunk
-    glColor3f(0.55f, 0.27f, 0.07f); // Brown color
-    drawTrunk(texture[0]);
-    
-    // Draw leaves as icosahedrons
-    glColor3f(0.0f, 1.0f, 0.0f); // Green color
-    
-    // Translate to the top of the trunk
-    glTranslatef(0,2,0);
-    //glRotated();
-    // Draw leaves as palm leaves
-    glColor3f(0.0f, 1.0f, 0.0f); // Green color
-    drawPalmTreeLeaves(0,0,0,   12,0.8,20);  // 12 leaves, radius 0.8, 20 segments per leaf
-    drawPalmTreeLeaves(0,0.2f,0,    10, 0.5,20);  // 10 leaves, radius 0.5, 20 segments per leaf
-
-    glPopMatrix();
-    
-
-}
 // Function to draw a forest of trees
 // draws numberOfTrees over a square area of areaSize*2
 void drawForest(int numberOfTrees, float areaSize) {
@@ -147,9 +108,7 @@ void drawForest(int numberOfTrees, float areaSize) {
     }
 }
 
-int generateRandomInt(int min, int max){
-   return rand() % (max - min + 1) + min;
-}
+
 
 /*
 Function to populate the arrays, shape, etc for the current hole.
@@ -232,7 +191,7 @@ void greenView(){
    double Ex = -2*dim*Sin(th)*Cos(ph);
    double Ey = +2*dim        *Sin(ph);
    double Ez = +2*dim*Cos(th)*Cos(ph);
-   gluLookAt(greenLoc.x + Ex,greenLoc.y+ Ey+10,greenLoc.z + Ez , greenLoc.x,greenLoc.y,greenLoc.z , 0,1,0);
+   gluLookAt(greenLoc.x + Ex,Ey,greenLoc.z + Ez , greenLoc.x,greenLoc.y,greenLoc.z , 0,1,0);
 }
 /*
  *  OpenGL (GLUT) calls this routine to display the scene
@@ -295,7 +254,7 @@ void display()
       }
       //  Draw light position as ball (still no lighting here)
       glColor3f(1,1,1);
-      ball(Position[0],Position[1],Position[2],3.0);
+      //ball(Position[0],Position[1],Position[2],3.0);
       //  OpenGL should normalize normal vectors
       glEnable(GL_NORMALIZE);
       //  Enable lighting
