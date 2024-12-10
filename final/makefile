@@ -1,5 +1,5 @@
 # Example 13
-EXE=main
+EXE=final
 
 # Main target
 all: $(EXE)
@@ -46,7 +46,7 @@ CSCIx229.a:fatal.o errcheck.o print.o loadtexbmp.o loadobj.o projection.o drawOb
 	g++ -c $(CFLG)  $<
 
 #  Link
-main:main.o   CSCIx229.a
+final:main.o   CSCIx229.a
 	gcc $(CFLG) -o $@ $^  $(LIBS)
 
 #  Clean

@@ -62,11 +62,11 @@ double dirz = 0.0;
 // Light values
 int light     =   1;  // Lighting
 int one       =   1;  // Unit value
-int distance  =   25;  // Light distance
+int distance  =   50;  // Light distance
 
-int ambient   =  50;  // Ambient intensity (%)
+int ambient   =  0;  // Ambient intensity (%)
 int diffuse   =  50;  // Diffuse intensity (%)
-int specular  =   0;  // Specular intensity (%)
+int specular  =   20;  // Specular intensity (%)
 int local     =   0;  // Local Viewer Model
 int zh        =  90;  // Light azimuth
 float ylight  =   40;  // Elevation of light
@@ -223,37 +223,52 @@ void display()
    if (light)
    {
       //  Translate intensity to color vectors
-      float Ambient[]   = {0.01*ambient ,0.01*ambient ,0.01*ambient ,1.0};
-      float Diffuse[]   = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
-      float Specular[]  = {0.01*specular,0.01*specular,0.01*specular,1.0};
+         float Ambient[] = {0.01*ambient, 0.01*ambient,0.01*ambient, 1.0};
+         float Diffuse[] = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
+         float Specular[] = {0.01*specular,0.01*specular,0.01*specular,1.0};
       //  Light position
       float Position[4];
+
       if(lightMode == 0){
-         Position[0] =distance*Cos(30);
-         Position[1]=ylight;
-         Position[2]=distance*Sin(60);
+         Position[0]=distance*Cos(30);
+         Position[1]=distance*Sin(30);
+         Position[2]=holeLength;
          Position[3]=1.0;
+         //morning color
+         // float Ambient[] = {0.01*ambient, 0.01*ambient,0.01*ambient, 1.0};
+         // float Diffuse[] = {0.02*diffuse ,0.03*diffuse ,0.05*diffuse ,1.0};
+         // float Specular[] = {0.01*specular,0.01*specular,0.01*specular,1.0};
       } 
       else if(lightMode == 1){
-         Position[0] =distance*Cos(60);
-         Position[1]=ylight;
-         Position[2]=distance*Sin(0);
+         Position[0]=distance*Cos(90);
+         Position[1]=distance*Sin(90);
+         Position[2]=holeLength;
          Position[3]=1.0;
+         //noon color
+
       } 
       else if(lightMode == 2){
-         Position[0] =distance*Cos(180);
-         Position[1]=ylight;
-         Position[2]=distance*Sin(30);
+         Position[0] =distance*Cos(145);
+         Position[1]=distance*Sin(145);
+         Position[2]=holeLength;
          Position[3]=1.0;
+         //late afternoon color
+         // float Ambient[] = {0.01*ambient, 0.01*ambient,0.01*ambient, 1.0};
+         // float Diffuse[] = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
+         // float Specular[] = {0.01*specular,0.01*specular,0.01*specular,1.0};
       } 
       else if(lightMode == 3){
-         Position[0]=distance*Cos(zh/15+180);
-         Position[1]=ylight;
-         Position[2]=distance*Sin(zh/15+180);
+         Position[0]=distance*Cos(180);
+         Position[1]=distance*Sin(180);
+         Position[2]=holeLength;
          Position[3]=1.0;
+         //sunset color
+         // float Ambient[] = {0.01*ambient, 0.01*ambient,0.01*ambient, 1.0};
+         // float Diffuse[] = {0.01*diffuse ,0.01*diffuse ,0.01*diffuse ,1.0};
+         // float Specular[] = {0.01*specular,0.01*specular,0.01*specular,1.0};
       }
       //  Draw light position as ball (still no lighting here)
-      glColor3f(1,1,1);
+      glColor3f(1,0.5,1);
       //ball(Position[0],Position[1],Position[2],3.0);
       //  OpenGL should normalize normal vectors
       glEnable(GL_NORMALIZE);
@@ -410,6 +425,15 @@ void key(unsigned char ch,int x,int y)
    }else if (ch == 'n'){
       initializeHole();
    }
+   if(mode == 1){
+      if(ch == 'w'){
+         fov -= 3;
+      }else if(ch=='s'){
+         fov +=3;
+      }
+   }
+
+
     Project(mode?fov:60,asp,dim);
    //  Tell GLUT it is necessary to redisplay the scene
    glutPostRedisplay();

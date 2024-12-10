@@ -420,7 +420,7 @@ void calculateNormalAndSet(quad q) {
     normal[1] = q.y1+q.y2+q.y3+q.y4;
     normal[2] = q.z1+q.z2+q.z3+q.z4;
     normalize(normal);
-    // if(normal[0] < 0){
+    // if(normal[1] < 0){
     //     normal[0] = -normal[0];
     //     normal[1] = -normal[1];
     //     normal[2] = -normal[2];
@@ -832,12 +832,12 @@ quad** createFairway(Point3D greenLocation, int width, int holeLength, int rough
     for (int i = 0; i < totalWidth; ++i) {
         quadArray[i] = (quad*)malloc(holeLength * sizeof(quad));
     }
-    float heightMap[holeLength+1][totalWidth+1];
+    float heightMap[holeLength+(int)floor(sharedGreen.radiusZ)+1][totalWidth+1];
     initializePermutations(); //initialize permutations for the perlin noise function
     float scale = 0.1;
     float heightScale = 2; // fairway noise is bigger
     // Generate heights for the grid vertices
-    for (int i = 0; i <= holeLength; i++) {
+    for (int i = 0; i <= holeLength+(int)floor(sharedGreen.radiusZ); i++) {
         for (int j = 0; j <= totalWidth; j++) {
             heightMap[i][j] = perlinNoise(j*scale ,i*scale) * heightScale;
             // printf("x: %d, y:%d = %f\n",i,j,heightMap[i][j]);
@@ -854,7 +854,7 @@ quad** createFairway(Point3D greenLocation, int width, int holeLength, int rough
         // }else if(widthMap[i-1]+negChange < 0){
         //     widthMap[i] = widthMap[i-1] + negChange;
         // }
-        widthMap[i] = -Cos(i)*width;
+        widthMap[i] = -Cos(i)*width; // set width of fairway
     }
 
 
@@ -881,7 +881,16 @@ quad** createFairway(Point3D greenLocation, int width, int holeLength, int rough
             q.x4 = x * xOffset - (totalWidth/2);
             q.y4 = heightMap[x][z+1];  // Flat surface
             q.z4 = (z + 1) * zOffset;
-            if(x < widthMap[z] || x >= totalWidth - widthMap[z]){
+            if(isInsideShape(q.x1,q.z1,sharedGreen.a,sharedGreen.b,sharedGreen.centerX,sharedGreen.centerZ,sharedGreen.radiusX,sharedGreen.radiusZ) 
+            && (q.z1 > holeLength-sharedGreen.radiusZ || q.z3 > holeLength-sharedGreen.radiusZ) 
+            && (q.x1 > sharedGreen.radiusX || q.x2 < sharedGreen.radiusX)
+            )
+            {
+                q.x1 = -1;
+                q.y1 = -1;
+                q.z1 = -1;
+            }
+            if( (x < widthMap[z] || x >= totalWidth - widthMap[z]) && q.x1 != -1){
                 q.type = ROUGH;
                 q.hasTree = false;
                 if(randomProbability(0.05)){
@@ -890,13 +899,6 @@ quad** createFairway(Point3D greenLocation, int width, int holeLength, int rough
             }else{
                 q.hasTree = false;
                 q.type = FAIRWAY;
-            }
-            if(isInsideGreen(q.x1,q.z1,sharedGreen.a,sharedGreen.b,sharedGreen.centerX,sharedGreen.centerZ,sharedGreen.radiusX,sharedGreen.radiusZ) 
-            && q.z1 > holeLength-sharedGreen.radiusZ
-            ){
-                q.x1 = -1;
-                q.y1 = -1;
-                q.z1 = -1;
             }
             quadArray[x][z] = q;
         }
