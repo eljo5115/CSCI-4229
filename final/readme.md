@@ -1,6 +1,5 @@
 <h1>Eli Jordan: Procedural Golf Course</h1>
-<p>What is currently lacking is the final camera mode (flyover) and adding some various trees. I need to add some variation to the fairway shape but my initial implementation did not work very well. I'm also planning on making the fairway much wider so that I can draw trees and add some completeness to the scene. If that gets done before too long, I'll start trying to add some random water or sand.</p>
-<p>Ambient light is cranked at the moment for easy viewing of the entire terrain.</p>
+<p>This is a project to explore the methodology behind creating a golf course procedurally. The main idea was to have a contiguous surface from the tee box to the green (fairway) with some obstacles lining the path. Unfortunately I ran out of time to implement any sort of water hazards. The light position is meant to simulate different times of day (morning, noon, afternoon, sunset). The different camera modes are to show the various angles of the course as you play the hole. </p>
 <ol>
     <li>Run <code>make</code> this should make an executable called main</li>
     <li>Run <code>./main</code></li>
@@ -10,6 +9,5 @@
     <li>m to change camera modes</li>
     <li>f to change light position</li>
     <li>n to generate new hole</li>
-    <li>f to change light position</li>
     <li>w/s to zoom in/out in green view mode</li>
 </ul>
