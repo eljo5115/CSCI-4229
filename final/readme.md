@@ -10,5 +10,6 @@
     <li>m to change camera modes</li>
     <li>f to change light position</li>
     <li>n to generate new hole</li>
+    <li>f to change light position</li>
     <li>w/s to zoom in/out in green view mode</li>
 </ul>

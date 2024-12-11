@@ -22,7 +22,13 @@ typedef struct {
 } greenData;
 
 greenData sharedGreen;
+// typedef struct {
+//    unsigned int fairway,rough,sand,green;
+// } textures;
 
+// textures textureStruct;
+
+unsigned int textures[5];
 /*
  *  Draw vertex in polar coordinates with normal
  */
@@ -500,26 +506,47 @@ void drawQuad(quad q) {
     switch(q.type){
         case FAIRWAY:
             glColor3ub(24,230,13);
+            //assign fairway texture
+            glEnable(GL_TEXTURE_2D);
+            glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+            glColor3f(1,1,1);
+            glBindTexture(GL_TEXTURE_2D,textures[0]);
             break;
         case ROUGH:
             glColor3ub(20,180,30);
+            //assign rough texture
+            glEnable(GL_TEXTURE_2D);
+            glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+            glColor3f(1,1,1);
+            glBindTexture(GL_TEXTURE_2D,textures[1]);
             break;
         case GREEN:
             glColor3ub(47,250,60);
+            //assign green texture
+            // glEnable(GL_TEXTURE_2D);
+            // glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+            // glColor3f(1,1,1);
+            // glBindTexture(GL_TEXTURE_2D,textures[2]);
             break;
         case BUNKER:
+            //assign sand texture
+            glEnable(GL_TEXTURE_2D);
+            glTexEnvi(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+            glColor3f(1,1,1);
+            glBindTexture(GL_TEXTURE_2D,textures[3]);
             glColor3ub(255,242,122);
             break;
         default:
-            glColor3ub(0,0,255);
+            //blue
+            glColor3ub(255,0,0);
             break;
     }
     //draw quad
     glBegin(GL_QUADS);
-    glVertex3f(q.x1, q.y1, q.z1);
-    glVertex3f(q.x2, q.y2, q.z2);
-    glVertex3f(q.x3, q.y3, q.z3);
-    glVertex3f(q.x4, q.y4, q.z4);
+    glTexCoord2f(0,0);glVertex3f(q.x1, q.y1, q.z1);
+    glTexCoord2f(1,0);glVertex3f(q.x2, q.y2, q.z2);
+    glTexCoord2f(0,1);glVertex3f(q.x3, q.y3, q.z3);
+    glTexCoord2f(1,1);glVertex3f(q.x4, q.y4, q.z4);
     glEnd();
 }
 

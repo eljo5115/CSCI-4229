@@ -89,6 +89,8 @@ Point3D greenLoc;
 //textures
 unsigned int texture[5];
 
+extern unsigned int textures[5];
+
 #define VELOCITY 0.5f
 
 
@@ -148,7 +150,6 @@ void initializeHole(){
    // Point3D* points = generateRandomControlPoints(numPoints,fairwayWidth,holeLength);
    fairway = createFairway(greenLoc,fairwayWidth,holeLength, roughWidth);
 }
-
 
 void topDownPerspective(){
         if(ph < 30){
@@ -232,7 +233,7 @@ void display()
       if(lightMode == 0){
          Position[0]=distance*Cos(30);
          Position[1]=distance*Sin(30);
-         Position[2]=holeLength;
+         Position[2]=holeLength+10;
          Position[3]=1.0;
          //morning color
          // float Ambient[] = {0.01*ambient, 0.01*ambient,0.01*ambient, 1.0};
@@ -242,7 +243,7 @@ void display()
       else if(lightMode == 1){
          Position[0]=distance*Cos(90);
          Position[1]=distance*Sin(90);
-         Position[2]=holeLength;
+         Position[2]=holeLength+10;
          Position[3]=1.0;
          //noon color
 
@@ -250,7 +251,7 @@ void display()
       else if(lightMode == 2){
          Position[0] =distance*Cos(145);
          Position[1]=distance*Sin(145);
-         Position[2]=holeLength;
+         Position[2]=holeLength+5;
          Position[3]=1.0;
          //late afternoon color
          // float Ambient[] = {0.01*ambient, 0.01*ambient,0.01*ambient, 1.0};
@@ -291,7 +292,6 @@ void display()
       glDisable(GL_LIGHTING);
     //  Decide what to draw
 
-
     // Render the green
    drawGreen(green, rows, columns);
    //render the fairway
@@ -323,6 +323,7 @@ void display()
    }
    //  Five pixels from the lower left corner of the window
    glWindowPos2i(5,5);
+   glColor3ub(255,255,255);
    //  Print the text string
    Print("Par=%d - Yardage: %d Mode: %s, Light mode: %d",par,holeLength,text[mode],lightMode);
    //  Render the scene
@@ -468,7 +469,7 @@ void idle()
    double t = glutGet(GLUT_ELAPSED_TIME)/1000.0;
    zh = fmod(180*t,1440);
    if(mode == 2 && zpos <= holeLength+30){
-      zpos += t*0.2;
+      zpos += holeLength/100;
    }else{
       zpos = 0;
    }
@@ -513,11 +514,10 @@ int main(int argc,char* argv[])
    //  Tell GLUT to call "key" when a key is pressed
    glutKeyboardFunc(key);
 //    //Load textures
-   // texture[0] = LoadTexBMP("textures/trunk.bmp");
-   // texture[1] = LoadTexBMP("textures/grass.bmp");
-   // texture[2] = LoadTexBMP("textures/water.bmp");
-//    texture[3] = LoadTexBMP("brick.bmp");
-//    texture[4] - LoadTexBMP("leaves.bmp");
+   // textureStruct.tree = LoadTexBMP("textures/trunk.bmp");
+   textures[0] = LoadTexBMP("textures/fairway.bmp");
+   textures[1]= LoadTexBMP("textures/rough.bmp");
+   textures[3] = LoadTexBMP("textures/sand.bmp");
 
    //  Pass control to GLUT so it can interact with the user
    glutMainLoop();
